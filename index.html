@@ -329,7 +329,7 @@
 
 <footer>
   Hex Facebook is a <i class="fa-solid fa-shield-halved"></i> client-side tool. Download only media you own or have rights to.<br>
-  Engines: Cobalt (multi-instance) · Jina AI · AllOrigins · CodeTabs · cors.lol · corsproxy.io · Microlink
+  Engines: FabDL · Ryzendesu · Vreden · Cobalt · Jina AI · CodeTabs
 </footer>
 
 <script>
@@ -708,38 +708,7 @@
   }
 
   function variantsOf(target) {
-    var out = [{ url: target, label: 'www' }];
-    try {
-      var t = target.toLowerCase();
-
-      if (!/fb\.watch|messenger\.com/.test(t)) {
-        var wb = new URL(target); wb.hostname = 'web.facebook.com';
-        if (wb.toString() !== target) out.push({ url: wb.toString(), label: 'web' });
-
-        var mb = new URL(target); mb.hostname = 'mbasic.facebook.com';
-        if (mb.toString() !== target) out.push({ url: mb.toString(), label: 'mbasic' });
-
-        var ns = new URL(target); ns.searchParams.set('_fb_noscript', '1');
-        if (ns.toString() !== target) out.push({ url: ns.toString(), label: 'noscript' });
-      }
-
-      var isVideo = /\/(watch|videos|reel|share\/v|video\.php)/.test(t) || /story\.php/.test(t) || /permalink\.php/.test(t);
-      var isPost  = /\/(posts|photos|permalink|photo\.php)/.test(t) || /story\.php/.test(t);
-
-      if (isVideo) {
-        out.push({
-          url: 'https://www.facebook.com/plugins/video.php?href=' + encodeURIComponent(target) + '&show_text=false',
-          label: 'plugin-video'
-        });
-      }
-      if (isPost) {
-        out.push({
-          url: 'https://www.facebook.com/plugins/post.php?href=' + encodeURIComponent(target) + '&show_text=false',
-          label: 'plugin-post'
-        });
-      }
-    } catch (e) {}
-    return out;
+    return [{ url: target, label: 'www' }];
   }
 
   /* ===================================================================
@@ -765,22 +734,11 @@
   var JUNK_RE = /static\.xx\.fbcdn\.net|static\.xx\.fbsbx|\/rsrc\.php|\/rsrc\/|emoji\.php|sprite|\.svg(\?|#|$)/i;
 
   var VIDEO_KEYS = [
-    'browser_native_hd_url',
-    'browser_native_sd_url',
-    'playable_url_quality_hd',
-    'playable_url_quality_sd',
-    'playable_url',
-    'playable_url_dash',
-    'spherical_playable_url',
-    'hd_src_no_ratelimit',
-    'sd_src_no_ratelimit',
-    'hd_src',
-    'sd_src',
-    'video_url',
-    'video_hd_url',
-    'video_sd_url',
-    'progressive_url',
-    'src'
+    'browser_native_hd_url', 'browser_native_sd_url',
+    'playable_url_quality_hd', 'playable_url_quality_sd',
+    'playable_url', 'playable_url_dash',
+    'hd_src_no_ratelimit', 'sd_src_no_ratelimit',
+    'hd_src', 'sd_src', 'video_url', 'video_hd_url', 'video_sd_url'
   ];
 
   function extractMedia(raw) {
@@ -806,28 +764,16 @@
     }
 
     var m;
-
-    // 1. Trusted JSON keys
-    var VIDEO_RE = new RegExp(
-      '"(' + VIDEO_KEYS.join('|') + ')"\\s*:\\s*"([^"\\\\]{16,})"',
-      'g'
-    );
+    var VIDEO_RE = new RegExp('"(' + VIDEO_KEYS.join('|') + ')"\\s*:\\s*"([^"\\\\]{16,})"', 'g');
     while ((m = VIDEO_RE.exec(src)) !== null) {
       var u = m[2];
       try { u = JSON.parse('"' + u.replace(/"/g, '\\"') + '"'); } catch (e) {}
-      var keyName = m[1];
-      var isVid = /video|play|src|hd|sd|dash|progressive/i.test(keyName) &&
-                  !/photo|image|picture|thumb|icon/i.test(keyName);
-      push(u, isVid ? 'video' : null);
+      push(u, 'video');
     }
 
-    // 2. HTML5 video/source tags
     var VIDEO_TAG_RE = /<(?:video|source)\b[^>]*\bsrc=["']([^"']+)["']/gi;
-    while ((m = VIDEO_TAG_RE.exec(src)) !== null) {
-      push(unescapeMedia(m[1]), 'video');
-    }
+    while ((m = VIDEO_TAG_RE.exec(src)) !== null) push(unescapeMedia(m[1]), 'video');
 
-    // 3. Meta tags
     var META_RE = /<meta\b[^>]*>/gi;
     var WANT = /(og:video|og:video:url|og:video:secure_url|og:image|og:image:secure_url|og:audio|twitter:player:stream|twitter:image)/i;
     var tag;
@@ -836,19 +782,14 @@
       if (!WANT.test(t)) continue;
       var c = t.match(/content\s*=\s*["']([^"']+)["']/i);
       if (!c) continue;
-      var isVideoMeta = /og:video|twitter:player:stream/i.test(t);
-      push(c[1], isVideoMeta ? 'video' : null);
+      push(c[1], /og:video|twitter:player:stream/i.test(t) ? 'video' : null);
     }
 
-    // 4. Generic sweep
     var URL_RE = /https?:\/\/[^\s"'`<>\\^{}|]+/g;
-    while ((m = URL_RE.exec(src)) !== null) {
-      push(m[0], null);
-    }
+    while ((m = URL_RE.exec(src)) !== null) push(m[0], null);
 
     var order = { video: 0, photo: 1, audio: 2 };
     items.sort(function (a, b) { return order[a.kind] - order[b.kind]; });
-
     return items.slice(0, 30);
   }
 
@@ -896,8 +837,6 @@
     if (/\.(mp4|m4v|webm|mov|ogv)(\?|#|&|$)/i.test(u)) return 'video';
     if (/\.(mp3|m4a|aac|wav|opus|ogg)(\?|#|&|$)/i.test(u)) return 'audio';
     if (/^https?:\/\/video[\w.-]*\.fbcdn\.net\//i.test(u)) return 'video';
-    if (/\/v\/t42\.\d+-/i.test(u)) return 'video';
-    if (/fbcdn\.net.*\.mp4/i.test(u)) return 'video';
     return 'photo';
   }
 
@@ -908,41 +847,86 @@
     var base = clean.substring(clean.lastIndexOf('/') + 1) || '';
     base = base.replace(/[^\w.\-]/g, '_').slice(-64);
     if (!/\.[a-z0-9]{2,5}$/i.test(base)) {
-      base = kind === 'video' ? 'video.mp4'
-           : kind === 'audio' ? 'audio.mp3'
-           : 'photo.jpg';
+      base = kind === 'video' ? 'video.mp4' : kind === 'audio' ? 'audio.mp3' : 'photo.jpg';
     }
     var stamp = new Date().toISOString().replace(/[-:T]/g, '').slice(0, 14);
     return 'hexfb_' + stamp + '_' + base;
   }
 
   function looksLikeLoginWall(text) {
-    var head = String(text).slice(0, 12000);
-    return /Log in to Facebook|You must log in|Log into Facebook|Sign up for Facebook|Please log in|Create new account|忘记账户|登录|登入/i.test(head);
-  }
-
-  function looksLikeFeedContent(text) {
-    var s = String(text).slice(0, 25000);
-    var markers = [
-      /热门视频/, /Popular\s+Videos?/i, /Top\s+Videos?/i, /Trending\s+Videos?/i,
-      /Watch\s+more/i, /See\s+more\s+on\s+Facebook/i, /上\s*Facebook\s*查看更多内容/i,
-      /Discover\s+Videos?/i, /Suggested\s+for\s+you/i, /Explore\s+Videos?/i,
-      /more\s+content\s+on\s+Facebook/i
-    ];
-    var score = 0;
-    for (var i = 0; i < markers.length; i++) if (markers[i].test(s)) score++;
-    return score >= 2;
+    var head = String(text).slice(0, 15000);
+    return /Log in to Facebook|You must log in|Log into Facebook|Sign up for Facebook|Please log in|Create new account|忘记账户|登录|登入|<title>Facebook<\/title>/i.test(head);
   }
 
   /* ===================================================================
-     5) Cobalt API (multi-instance) + Reader pipeline
+     5) Multi-Engine Fetching (Fast API → Cobalt → Readers)
      =================================================================== */
+  
+  var FAST_APIS = [
+    {
+      name: 'FabDL',
+      url: function(t) { return 'https://api.fabdl.com/facebook/get?url=' + encodeURIComponent(t); },
+      parse: function(data) {
+        if (!data.result || !data.result.medias) return null;
+        var items = [];
+        data.result.medias.forEach(function(m) {
+          if (m.format === 'mp4') items.push({ url: m.url, kind: 'video', filename: (data.result.title || 'video').replace(/[^\w\-]+/g, '_') + '_' + m.quality + '.mp4' });
+          if (m.format === 'mp3') items.push({ url: m.url, kind: 'audio', filename: (data.result.title || 'audio').replace(/[^\w\-]+/g, '_') + '.mp3' });
+        });
+        return { items: items, poster: data.result.thumb, meta: { title: data.result.title || 'Facebook Video', description: 'Resolved via FabDL' } };
+      }
+    },
+    {
+      name: 'Ryzendesu',
+      url: function(t) { return 'https://api.ryzendesu.vip/api/downloader/fbdl?url=' + encodeURIComponent(t); },
+      parse: function(data) {
+        if (!data.success || !data.data) return null;
+        var items = [];
+        if (data.data.video_hd) items.push({ url: data.data.video_hd, kind: 'video' });
+        if (data.data.video_sd) items.push({ url: data.data.video_sd, kind: 'video' });
+        return { items: items, poster: data.data.thumbnail, meta: { title: data.data.title || 'Facebook Media', description: 'Resolved via Ryzendesu' } };
+      }
+    },
+    {
+      name: 'Vreden',
+      url: function(t) { return 'https://api.vreden.my.id/api/fbdl?url=' + encodeURIComponent(t); },
+      parse: function(data) {
+        if (!data.status || !data.result || !data.result.url) return null;
+        var items = [];
+        if (data.result.url.hd) items.push({ url: data.result.url.hd, kind: 'video' });
+        if (data.result.url.sd) items.push({ url: data.result.url.sd, kind: 'video' });
+        return { items: items, poster: data.result.thumbnail, meta: { title: data.result.title || 'Facebook Media', description: 'Resolved via Vreden' } };
+      }
+    }
+  ];
+
+  async function fetchFastAPI(target) {
+    for (var i = 0; i < FAST_APIS.length; i++) {
+      var api = FAST_APIS[i];
+      try {
+        log('→ API: ' + api.name);
+        var res = await fetchWithTimeout(api.url(target), { method: 'GET' }, 8000);
+        if (!res.ok) throw new Error('HTTP ' + res.status);
+        var data = await res.json();
+        
+        var parsed = api.parse(data);
+        if (parsed && parsed.items.length > 0) {
+          log('✓ API (' + api.name + ') — ' + parsed.items.length + ' item(s)', 'ok');
+          return parsed;
+        } else {
+          throw new Error('No media found in response');
+        }
+      } catch (e) {
+        log('✗ API (' + api.name + ') — ' + formatReaderError(e), 'warn');
+      }
+    }
+    return null;
+  }
+
   var COBALT_INSTANCES = [
     'https://cobalt-api.kwiatekmiki.com',
-    'https://cobalt-backend.canine.tools',
-    'https://cobalt.canine.tools',
     'https://api.cobalt.tools',
-    'https://cobalt-api.meowing.de'
+    'https://cobalt-backend.canine.tools'
   ];
 
   async function fetchCobalt(target) {
@@ -953,56 +937,28 @@
         log('→ Cobalt: ' + host);
         var res = await fetchWithTimeout(base + '/', {
           method: 'POST',
-          headers: {
-            'Accept': 'application/json',
-            'Content-Type': 'application/json'
-          },
-          body: JSON.stringify({
-            url: target,
-            vQuality: '1080',
-            videoQuality: '1080',
-            filenameStyle: 'basic'
-          })
-        }, 14000);
+          headers: { 'Accept': 'application/json', 'Content-Type': 'application/json' },
+          body: JSON.stringify({ url: target, vQuality: '1080', filenameStyle: 'basic' })
+        }, 8000);
 
         if (!res.ok) throw new Error('HTTP ' + res.status);
+        var data = await res.json();
 
-        var txt = await res.text();
-        var data;
-        try { data = JSON.parse(txt); }
-        catch (e) { throw new Error('non-JSON response'); }
-
-        if (data.status === 'error') {
-          var code = (data.error && (data.error.code || data.error.message)) || 'error';
-          throw new Error(String(code));
-        }
+        if (data.status === 'error') throw new Error('error response');
 
         var items = [];
-
         if (data.status === 'tunnel' || data.status === 'redirect' || data.status === 'stream') {
-          if (data.url) {
-            items.push({
-              url: data.url,
-              kind: 'video',
-              filename: data.filename || null,
-              thumb: data.thumb || null
-            });
-          }
+          if (data.url) items.push({ url: data.url, kind: 'video' });
         } else if (data.status === 'picker' && Array.isArray(data.picker)) {
           data.picker.forEach(function (p) {
-            if (!p || !p.url) return;
-            var k = (p.type === 'video') ? 'video' : (p.type === 'photo') ? 'photo' : 'video';
-            items.push({ url: p.url, kind: k, thumb: p.thumb || null, filename: null });
+            if (p && p.url) items.push({ url: p.url, kind: p.type === 'photo' ? 'photo' : 'video' });
           });
-        } else if (data.url) {
-          items.push({ url: data.url, kind: 'video', thumb: data.thumb || null, filename: data.filename || null });
         }
 
-        if (!items.length) throw new Error('no media in response');
-
-        log('✓ Cobalt (' + host + ') — ' + items.length + ' item(s)', 'ok');
-        return items;
-
+        if (items.length > 0) {
+          log('✓ Cobalt (' + host + ') — ' + items.length + ' item(s)', 'ok');
+          return items;
+        }
       } catch (e) {
         log('✗ Cobalt (' + host + ') — ' + formatReaderError(e), 'warn');
       }
@@ -1012,31 +968,14 @@
 
   var READERS = [
     { name: 'Jina AI',   build: function (t) { return 'https://r.jina.ai/' + t; } },
-    { name: 'AllOrigins', build: function (t) { return 'https://api.allorigins.win/raw?url=' + encodeURIComponent(t); } },
-    { name: 'AllOrigins-J', build: function (t) { return 'https://api.allorigins.win/get?url=' + encodeURIComponent(t); },
-      json: 'contents' },
-    { name: 'CodeTabs', build: function (t) { return 'https://api.codetabs.com/v1/proxy?quest=' + encodeURIComponent(t); } },
-    { name: 'cors.lol', build: function (t) { return 'https://api.cors.lol/?url=' + encodeURIComponent(t); } },
-    { name: 'corsproxy.io', build: function (t) { return 'https://corsproxy.io/?url=' + encodeURIComponent(t); } },
-    { name: 'Microlink', build: function (t) {
-        return 'https://api.microlink.io/?url=' + encodeURIComponent(t) + '&meta=true&video=true&audio=true';
-      }, json: 'data' }
+    { name: 'CodeTabs',  build: function (t) { return 'https://api.codetabs.com/v1/proxy?quest=' + encodeURIComponent(t); } },
+    { name: 'corsproxy', build: function (t) { return 'https://corsproxy.io/?url=' + encodeURIComponent(t); } }
   ];
 
   function fetchWithTimeout(url, opts, ms) {
     var ctrl = new AbortController();
     var id = setTimeout(function () { ctrl.abort(); }, ms || 7000);
-    var merged = Object.assign({}, opts || {}, { signal: ctrl.signal });
-    return fetch(url, merged).finally(function () { clearTimeout(id); });
-  }
-
-  function statusMessageFor(code) {
-    if (code === 451) return 'HTTP 451 — blocked';
-    if (code === 403) return 'HTTP 403 — forbidden';
-    if (code === 429) return 'HTTP 429 — rate limited';
-    if (code === 404) return 'HTTP 404 — not found';
-    if (code === 502 || code === 503) return 'HTTP ' + code + ' — proxy down';
-    return 'HTTP ' + code;
+    return fetch(url, Object.assign({}, opts || {}, { signal: ctrl.signal })).finally(function () { clearTimeout(id); });
   }
 
   function formatReaderError(e) {
@@ -1048,71 +987,34 @@
   }
 
   async function tryRead(reader, target) {
-    var opts = { method: 'GET', redirect: 'follow', cache: 'no-store' };
-    if (reader.headers) opts.headers = reader.headers;
-
-    var res = await fetchWithTimeout(reader.build(target), opts, 7000);
-    if (!res.ok) throw new Error(statusMessageFor(res.status));
-
+    var res = await fetchWithTimeout(reader.build(target), { method: 'GET', redirect: 'follow', cache: 'no-store' }, 6000);
+    if (!res.ok) throw new Error('HTTP ' + res.status);
     var txt = await res.text();
-
-    if (/status code:\s*30[1278]/i.test(txt)) {
-      throw new Error('upstream 301/302 redirect (likely feed page)');
-    }
-
-    if (reader.json) {
-      try {
-        var parsed = JSON.parse(txt);
-        if (reader.json === 'contents')      txt = parsed.contents || '';
-        else if (reader.json === 'data')     txt = JSON.stringify(parsed.data || {});
-        else                                 txt = JSON.stringify(parsed);
-      } catch (e) { throw new Error('bad JSON payload'); }
-    }
-
+    if (!txt || txt.length < 100) throw new Error('empty');
     return txt;
   }
 
   async function readPage(target) {
     var variants = variantsOf(target);
     var errors = [];
-    var deadline = Date.now() + 60000;
-    var attemptNo = 0;
 
     for (var i = 0; i < READERS.length; i++) {
       var r = READERS[i];
-
-      for (var j = 0; j < variants.length; j++) {
-        if (Date.now() > deadline) {
-          log('Reader pipeline deadline hit (60s)', 'warn');
-          throw new Error(errors.slice(-3).join(' · '));
-        }
-
-        var v = variants[j];
-        var tag = r.name + (j === 0 ? '' : ' · ' + v.label);
-
-        attemptNo++;
-        setStatus('Reader ' + (i + 1) + '/' + READERS.length + ' · ' + tag +
-                  '… (attempt ' + attemptNo + ')', 'busy');
-
-        try {
-          var txt = await tryRead(r, v.url);
-          if (!txt || txt.length < 100) throw new Error('empty');
-          if (looksLikeLoginWall(txt)) {
-            log('⚠ ' + tag + ' — login wall', 'warn');
-            errors.push(tag + ': login wall');
-            break;
-          }
-          log('✓ ' + tag + ' — ' + txt.length + ' chars', 'ok');
-          return { text: txt, reader: tag, variant: v.label };
-        } catch (e) {
-          var mm = formatReaderError(e);
-          log('✗ ' + tag + ' — ' + mm, 'warn');
-          errors.push(tag + ': ' + mm);
-        }
+      var v = variants[0];
+      var tag = r.name;
+      
+      setStatus('Reader ' + (i + 1) + '/' + READERS.length + ' · ' + tag + '…', 'busy');
+      try {
+        var txt = await tryRead(r, v.url);
+        if (looksLikeLoginWall(txt)) throw new Error('login wall');
+        log('✓ ' + tag + ' — ' + txt.length + ' chars', 'ok');
+        return { text: txt, reader: tag, variant: v.label };
+      } catch (e) {
+        log('✗ ' + tag + ' — ' + formatReaderError(e), 'warn');
+        errors.push(tag + ': ' + formatReaderError(e));
       }
     }
-
-    throw new Error(errors.slice(-3).join(' · '));
+    throw new Error(errors.slice(-2).join(' · '));
   }
 
   /* ===================================================================
@@ -1150,20 +1052,8 @@
     posterImg.removeAttribute('src');
   }
 
-  function filterPoster(items, poster) {
-    if (!poster) return items;
-    var hasVideo = items.some(function (it) { return it.kind === 'video'; });
-    if (!hasVideo) return items;
-    return items.filter(function (it) {
-      try {
-        var a = new URL(it.url), b = new URL(poster);
-        return !(a.hostname === b.hostname && a.pathname === b.pathname);
-      } catch (e) { return true; }
-    });
-  }
-
   /* ===================================================================
-     7) Results rendering — Grouped by Section (with WORKING video preview)
+     7) Results rendering
      =================================================================== */
   function renderResults(items, posterUrl) {
     resultsEl.innerHTML = '';
@@ -1216,14 +1106,12 @@
           thumb.appendChild(img);
 
         } else if (kind === 'video') {
-          // REAL video preview using <video> with referrerPolicy
           var v = document.createElement('video');
           v.controls = true;
           v.playsInline = true;
           v.setAttribute('webkit-playsinline', '');
           v.preload = 'metadata';
           v.referrerPolicy = 'no-referrer';
-          v.setAttribute('disablepictureinpicture', 'false');
           if (itemPoster) v.poster = itemPoster;
           v.src = u;
 
@@ -1251,12 +1139,8 @@
           }
 
           v.addEventListener('error', showFallback);
-          // Safety net: if metadata hasn't loaded in 18s, show fallback
-          var guard = setTimeout(function () {
-            if (v.readyState === 0) showFallback();
-          }, 18000);
+          var guard = setTimeout(function () { if (v.readyState === 0) showFallback(); }, 18000);
           v.addEventListener('loadedmetadata', function () { clearTimeout(guard); });
-          v.addEventListener('canplay', function () { clearTimeout(guard); });
 
           thumb.appendChild(v);
           thumb.appendChild(fallback);
@@ -1292,12 +1176,8 @@
         var actions = document.createElement('div');
         actions.className = 'actions';
 
-        var dlLabel = kind === 'video' ? 'Download MP4'
-                    : kind === 'audio' ? 'Download MP3'
-                    : 'Download JPG';
-        var dlIcon  = kind === 'video' ? 'fa-solid fa-file-video'
-                    : kind === 'audio' ? 'fa-solid fa-file-audio'
-                    : 'fa-solid fa-file-image';
+        var dlLabel = kind === 'video' ? 'Download MP4' : kind === 'audio' ? 'Download MP3' : 'Download JPG';
+        var dlIcon  = kind === 'video' ? 'fa-solid fa-file-video' : kind === 'audio' ? 'fa-solid fa-file-audio' : 'fa-solid fa-file-image';
 
         var dl = mkBtn(dlIcon, dlLabel, 'primary');
         dl.addEventListener('click', function () {
@@ -1350,16 +1230,15 @@
   async function fetchMediaBuffer(url, timeoutMs) {
     var attempts = [
       { name: 'direct',    u: url, opts: { mode: 'cors', credentials: 'omit' } },
-      { name: 'allorigins', u: 'https://api.allorigins.win/raw?url=' + encodeURIComponent(url), opts: {} },
-      { name: 'codetabs',  u: 'https://api.codetabs.com/v1/proxy?quest=' + encodeURIComponent(url), opts: {} },
-      { name: 'corsproxy', u: 'https://corsproxy.io/?url=' + encodeURIComponent(url), opts: {} }
+      { name: 'corsproxy', u: 'https://corsproxy.io/?url=' + encodeURIComponent(url), opts: {} },
+      { name: 'codetabs',  u: 'https://api.codetabs.com/v1/proxy?quest=' + encodeURIComponent(url), opts: {} }
     ];
     var lastErr = null;
     for (var i = 0; i < attempts.length; i++) {
       var a = attempts[i];
       try {
         log('Fetch [' + a.name + ']…');
-        var res = await fetchWithTimeout(a.u, a.opts, timeoutMs || 45000);
+        var res = await fetchWithTimeout(a.u, a.opts, timeoutMs || 30000);
         if (!res.ok) throw new Error('HTTP ' + res.status);
         var blob = await res.blob();
         if (!blob.size) throw new Error('empty');
@@ -1379,7 +1258,7 @@
 
     try {
       log('Downloading ' + filename);
-      var blob = await fetchMediaBuffer(url, 60000);
+      var blob = await fetchMediaBuffer(url, 45000);
       saveBlob(blob, filename);
       log('Saved ' + filename + ' (' + fmtSize(blob.size) + ')', 'ok');
       setStatus('Saved: ' + filename + ' (' + fmtSize(blob.size) + ')', 'ok');
@@ -1421,15 +1300,8 @@
     ffLoading = (async function () {
       log('Loading ffmpeg.wasm (first run ≈ 25 MB)…');
       await loadScriptOnce(FF_JS_CDN);
-      if (!window.FFmpeg || !window.FFmpeg.createFFmpeg) {
-        throw new Error('ffmpeg.wasm global not found');
-      }
+      if (!window.FFmpeg || !window.FFmpeg.createFFmpeg) throw new Error('ffmpeg.wasm global not found');
       var ff = window.FFmpeg.createFFmpeg({ log: false, corePath: FF_CORE_CDN });
-      if (ff.setLogger) {
-        ff.setLogger(function (m) {
-          if (m && m.type === 'err' && m.message) log('ffmpeg › ' + m.message, 'warn');
-        });
-      }
       await ff.load();
       log('ffmpeg.wasm ready ✓', 'ok');
       FF = ff;
@@ -1524,7 +1396,6 @@
 
     var target = normalizeUrl(raw);
 
-    // Direct media URL → straight to preview
     if (!target && /^https?:\/\//i.test(raw) && looksLikeDirectMedia(raw)) {
       clearPoster();
       renderResults([{ url: raw, kind: kindOf(raw) }], null);
@@ -1546,30 +1417,35 @@
     var feedType = isFeedUrl(target);
     if (feedType) {
       log('⚠ Feed URL: ' + feedType, 'warn');
-      setStatus(feedType + ' detected — trying anyway (may not contain a specific video)…', 'busy');
+      setStatus(feedType + ' detected — trying anyway…', 'busy');
     } else {
       setStatus('Starting…', 'busy');
     }
     log('━━ Target: ' + target);
 
     try {
-      // 1. Cobalt multi-instance
-      setStatus('Fetching via Cobalt API…', 'busy');
-      var cobaltItems = await fetchCobalt(target);
-
-      if (cobaltItems && cobaltItems.length > 0) {
-        var cobaltThumb = null;
-        for (var ci = 0; ci < cobaltItems.length; ci++) {
-          if (cobaltItems[ci].thumb) { cobaltThumb = cobaltItems[ci].thumb; break; }
-        }
-        renderPoster(cobaltThumb, { title: 'Facebook Media', description: 'Resolved via Cobalt API' });
-        renderResults(cobaltItems, cobaltThumb);
-        setStatus('Found ' + cobaltItems.length + ' item(s) via Cobalt. Tap “Download MP4”.', 'ok');
+      // 1. Try dedicated APIs (Fastest and bypasses CORS)
+      setStatus('Fetching via Fast API…', 'busy');
+      var apiData = await fetchFastAPI(target);
+      if (apiData && apiData.items.length > 0) {
+        renderPoster(apiData.poster, apiData.meta);
+        renderResults(apiData.items, apiData.poster);
+        setStatus('Found ' + apiData.items.length + ' item(s). Tap “Download MP4”.', 'ok');
         return;
       }
 
-      // 2. HTML readers fallback
-      setStatus('Cobalt failed, falling back to readers…', 'busy');
+      // 2. Try Cobalt API
+      setStatus('Fetching via Cobalt API…', 'busy');
+      var cobaltItems = await fetchCobalt(target);
+      if (cobaltItems && cobaltItems.length > 0) {
+        renderPoster(null, { title: 'Facebook Media', description: 'Resolved via Cobalt API' });
+        renderResults(cobaltItems, null);
+        setStatus('Found ' + cobaltItems.length + ' item(s) via Cobalt.', 'ok');
+        return;
+      }
+
+      // 3. Fallback to HTML readers
+      setStatus('API failed, falling back to HTML readers…', 'busy');
       var result = await readPage(target);
       var meta   = extractMeta(result.text);
       var poster = extractPoster(result.text);
@@ -1577,86 +1453,35 @@
 
       var vCount = items.filter(function (x) { return x.kind === 'video'; }).length;
       var pCount = items.filter(function (x) { return x.kind === 'photo'; }).length;
-      var aCount = items.filter(function (x) { return x.kind === 'audio'; }).length;
-      log('Extracted ' + items.length + ' item(s) via ' + result.reader + ' [' + result.variant + ']' +
-          ' — ' + vCount + ' video · ' + pCount + ' photo · ' + aCount + ' audio');
+      log('Extracted ' + items.length + ' item(s) via ' + result.reader + ' — ' + vCount + ' video · ' + pCount + ' photo');
 
       renderPoster(poster, meta);
-      var filtered = filterPoster(items, poster);
 
-      if (filtered.length) {
-        renderResults(filtered, poster);
-        setStatus('Found ' + filtered.length + ' item(s) via ' + result.reader +
-                  ' [' + result.variant + '].', 'ok');
-      } else if (feedType || looksLikeFeedContent(result.text)) {
-        setStatus(
-          (feedType || 'This page') + ' — it lists many videos, not a single downloadable post.\n' +
-          'Open the feed in a browser, tap a specific video, then paste that video URL here.',
-          'warn',
-          [
-            { label: 'Open feed', icon: 'fa-solid fa-arrow-up-right-from-square',
-              fn: function () { window.open(target, '_blank', 'noopener'); } },
-            { label: 'Paste specific URL', icon: 'fa-solid fa-link',
-              fn: function () {
-                urlInput.value = '';
-                urlInput.placeholder = 'Paste a specific video / reel / post URL…';
-                urlInput.focus();
-                setStatus('Paste the URL of a single video or reel.', 'warn');
-              } }
-          ]
-        );
+      if (items.length > 0) {
+        renderResults(items, poster);
+        setStatus('Found ' + items.length + ' item(s) via ' + result.reader + '.', 'ok');
       } else {
         setStatus(
-          'Page read via ' + result.reader + ', but no direct media URLs found.',
+          'Page read, but no direct media URLs found.\nTry: Retry · Open post · or paste the direct media URL.',
           'warn',
           [
-            { label: 'Open post', icon: 'fa-solid fa-arrow-up-right-from-square',
-              fn: function () { window.open(target, '_blank', 'noopener'); } },
-            { label: 'Retry', icon: 'fa-solid fa-rotate-right',
-              fn: function () { handleFetch(); } }
+            { label: 'Retry', icon: 'fa-solid fa-rotate-right', fn: function () { handleFetch(); } },
+            { label: 'Open post', icon: 'fa-solid fa-arrow-up-right-from-square', fn: function () { window.open(target, '_blank', 'noopener'); } }
           ]
         );
       }
     } catch (e) {
       log('All methods failed: ' + e.message, 'err');
-
-      if (feedType) {
-        setStatus(
-          feedType + ' — this URL lists many videos, so there is no single downloadable file.\n' +
-          'Open the feed in a browser, tap a specific video, then paste that video\'s URL here.',
-          'warn',
-          [
-            { label: 'Open feed', icon: 'fa-solid fa-arrow-up-right-from-square',
-              fn: function () { window.open(target, '_blank', 'noopener'); } },
-            { label: 'Paste specific URL', icon: 'fa-solid fa-link',
-              fn: function () {
-                urlInput.value = '';
-                urlInput.placeholder = 'Paste a specific video / reel / post URL…';
-                urlInput.focus();
-              } },
-            { label: 'Retry', icon: 'fa-solid fa-rotate-right',
-              fn: function () { handleFetch(); } }
-          ]
-        );
-      } else {
-        setStatus(
-          'Auto-fetch failed — every engine was blocked (private / geo-locked posts).\n' +
-          'Try Retry · Open in browser · or paste the direct media URL.',
-          'err',
-          [
-            { label: 'Retry', icon: 'fa-solid fa-rotate-right',
-              fn: function () { handleFetch(); } },
-            { label: 'Open post', icon: 'fa-solid fa-arrow-up-right-from-square',
-              fn: function () { window.open(target, '_blank', 'noopener'); } },
-            { label: 'Direct URL', icon: 'fa-solid fa-link',
-              fn: function () {
-                urlInput.value = '';
-                urlInput.placeholder = 'Paste a direct .mp4 / .jpg / .mp3 URL…';
-                urlInput.focus();
-              } }
-          ]
-        );
-      }
+      var isReel = target.includes('/reel/');
+      
+      setStatus(
+        'Auto-fetch failed. ' + (isReel ? 'Facebook is heavily protecting this Reel. ' : 'This usually happens with private / geo-locked posts. ') + '\nTry again in a few minutes, open the post, or paste the direct media URL.',
+        'err',
+        [
+          { label: 'Retry', icon: 'fa-solid fa-rotate-right', fn: function () { handleFetch(); } },
+          { label: 'Open post', icon: 'fa-solid fa-arrow-up-right-from-square', fn: function () { window.open(target, '_blank', 'noopener'); } }
+        ]
+      );
     } finally {
       fetching = false;
       fetchBtn.disabled = false;
@@ -1756,11 +1581,12 @@
   wireCustomPanel();
   loadSavedTheme();
 
-  log('HEXFB v10 ready');
-  log('Themes: ' + THEMES.length + ' · tap the palette button in the header');
-  log('Primary engine: Cobalt API × ' + COBALT_INSTANCES.length + ' instances');
-  log('Fallback: Jina AI · AllOrigins · CodeTabs · cors.lol · corsproxy.io · Microlink');
-  log('Video preview: <video referrerpolicy="no-referrer"> with automatic fallback');
+  log('HEXFB v13 ready');
+  log('Primary engine: FabDL (High success rate for Reels)');
+  log('Fallback 1: Ryzendesu, Vreden');
+  log('Fallback 2: Cobalt API');
+  log('Fallback 3: Jina AI · CodeTabs · CORSProxy');
+  log('Video preview: <video referrerpolicy="no-referrer"> with fallback');
   log('MP3: ffmpeg.wasm 0.11.6 + core 0.11.0');
 
   if (location.protocol === 'file:') {
@@ -1769,6 +1595,7 @@
   }
 })();
 </script>
+
 <script>
 // Disable right-click
 document.addEventListener('contextmenu', (e) => e.preventDefault());
@@ -1868,5 +1695,6 @@ if (document.addEventListener) {
     });
 }
 </script>
+
 </body>
 </html>
