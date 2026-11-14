@@ -3,18 +3,12 @@
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
-<meta name="color-scheme" content="dark" />
 <meta name="theme-color" content="#18191a" />
 <title>HEXFB - Downloader (Video · Photos · MP3)</title>
 
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" referrerpolicy="no-referrer" />
 
 <style>
-  /* =========================================================
-     BASE THEME VARS — dark baseline; primary/secondary/accent
-     are swapped by the JS theme system. Base-100/200/300 and
-     base-content are the customisable dark tones.
-     ========================================================= */
   :root{
     --base-100:#0b0d10;
     --base-200:#18191a;
@@ -38,7 +32,6 @@
   }
 
   *{box-sizing:border-box;-webkit-tap-highlight-color:transparent;}
-  html{color-scheme:dark;background:var(--bg);}
   body{
     margin:0;min-height:100vh;overflow-x:hidden;
     background:var(--bg);color:var(--text);
@@ -209,21 +202,33 @@
     overflow:hidden;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical}
   @keyframes fadein{from{opacity:0;transform:translateY(-4px)}to{opacity:1;transform:none}}
 
-  #results{display:grid;gap:12px;grid-template-columns:1fr;margin-bottom:12px}
-  @media (min-width:760px){ #results{grid-template-columns:1fr 1fr} }
+  /* SECTIONS */
+  .media-section{margin-bottom:20px;}
+  .section-title{display:flex;align-items:center;gap:8px;font-size:15px;font-weight:800;margin-bottom:10px;color:var(--text);}
+  .section-title i{color:var(--primary);}
+  .section-grid{display:grid;gap:12px;grid-template-columns:1fr;}
+  @media (min-width:760px){ .section-grid{grid-template-columns:1fr 1fr} }
 
   .media{padding:0;overflow:hidden;display:flex;flex-direction:column;margin:0}
-  .thumb{background:#000;display:flex;align-items:center;justify-content:center;min-height:110px;max-height:420px;overflow:hidden;}
+  .thumb{position:relative;background:#000;display:flex;align-items:center;justify-content:center;min-height:120px;max-height:420px;overflow:hidden;}
   .thumb img{width:100%;height:auto;max-height:420px;object-fit:contain;display:block}
-  .thumb video{width:100%;max-height:420px;display:block;background:#000}
+  .thumb video{width:100%;max-height:420px;display:block;background:#000;outline:0}
   .thumb audio{width:calc(100% - 28px);margin:22px 14px}
   .thumb.broken{color:var(--muted);font-size:12.5px;padding:30px 16px;text-align:center;line-height:1.6}
+
+  .thumb-fallback{
+    position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;
+    gap:10px;padding:18px;text-align:center;background:rgba(0,0,0,.6);color:#fff;
+  }
+  .thumb-fallback i{font-size:22px;color:#ffd479}
+  .thumb-fallback p{margin:0;font-size:12.5px;line-height:1.5;color:#e4e6eb}
 
   .meta{display:flex;align-items:center;gap:8px;padding:10px 12px 4px;min-width:0}
   .tag{flex:0 0 auto;font-size:9.5px;font-weight:800;letter-spacing:.09em;padding:3px 7px;border-radius:6px;background:var(--card2);color:var(--muted)}
   .tag.video{background:rgba(24,119,242,.18);color:#7ab4ff}
   .tag.photo{background:rgba(49,162,76,.18);color:#7bdc9a}
   .tag.audio{background:rgba(247,185,40,.18);color:#ffd479}
+  .tag.hd{background:rgba(240,40,73,.18);color:#ff8095}
   .fname{font-size:11.5px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0}
   .actions{display:flex;gap:8px;flex-wrap:wrap;padding:8px 12px 12px}
   .actions .btn{flex:1 1 auto;padding:9px 10px;font-size:12.5px;border-radius:9px}
@@ -286,7 +291,7 @@
     <label class="lbl" for="url"><i class="fa-brands fa-facebook"></i> Facebook link</label>
     <div class="inputwrap">
       <input id="url" type="url" inputmode="url" autocomplete="off" autocapitalize="off"
-             spellcheck="false" placeholder="Paste a specific video / reel / post URL…" />
+             spellcheck="false" placeholder="Paste a video / reel / post URL…" />
       <button id="pasteBtn" class="iconbtn" aria-label="Paste"><i class="fa-solid fa-paste"></i></button>
       <button id="clearBtn" class="iconbtn" aria-label="Clear"><i class="fa-solid fa-xmark"></i></button>
     </div>
@@ -295,9 +300,9 @@
     </div>
     <p class="hint">
       <i class="fa-solid fa-wand-magic-sparkles"></i>
-      <b>Auto-detects</b> on paste. Works with <b>/watch/?v=…</b>, <b>/reel/&lt;id&gt;</b>, <b>/videos/&lt;id&gt;</b>,
-      <b>/share/v/&lt;id&gt;</b>, <b>/photo/…</b>, <b>fb.watch</b>, <b>/posts/…</b>.<br>
-      <b>Feed pages</b> (<b>/watch/</b> and <b>/reel/</b> with no ID) list many videos — click one first, then paste its URL.
+      <b>Auto-detects</b> on paste. Works with <b>/reel/&lt;id&gt;</b>, <b>/videos/&lt;id&gt;</b>,
+      <b>/watch/?v=&lt;id&gt;</b>, <b>/share/r/…</b>, <b>/share/v/…</b>, <b>/posts/…</b>, <b>fb.watch/…</b>.
+      <br><i class="fa-solid fa-circle-info"></i> Or paste a <b>direct .mp4 / .jpg / .mp3 URL</b> to preview & download instantly.
     </p>
   </section>
 
@@ -310,6 +315,7 @@
   </section>
 
   <div id="status" class="card status hidden"></div>
+
   <div id="results"></div>
 
   <section class="card log-card">
@@ -323,7 +329,7 @@
 
 <footer>
   Hex Facebook is a <i class="fa-solid fa-shield-halved"></i> client-side tool. Download only media you own or have rights to.<br>
-  Readers: Jina AI (text + HTML) · AllOrigins · CodeTabs · cors.lol · corsproxy.io · cors.eu.org · Microlink · htmldriven · ThingProxy
+  Engines: Cobalt (multi-instance) · Jina AI · AllOrigins · CodeTabs · cors.lol · corsproxy.io · Microlink
 </footer>
 
 <script>
@@ -450,8 +456,7 @@
   }
 
   function resetSystemTheme() {
-    const theme = 'corporate';
-    applySystemTheme(theme);
+    applySystemTheme('corporate');
     customColors = {};
     const root = document.documentElement;
     ['primary', 'secondary', 'accent', 'neutral',
@@ -459,16 +464,15 @@
       .forEach(function (p) { root.style.removeProperty('--' + p); });
     try { localStorage.removeItem('neon-custom-colors'); } catch (_) {}
 
-    const c = THEME_SWATCHES.corporate || ['#4b6bfb', '#7b92b2', '#67cba0', '#181a2a'];
-    setInputValue('customPrimary',    c[0] || '#4b6bfb');
-    setInputValue('customSecondary',  c[1] || '#7b92b2');
-    setInputValue('customAccent',     c[2] || '#67cba0');
-    setInputValue('customNeutral',    c[3] || '#181a2a');
+    const c = THEME_SWATCHES.corporate;
+    setInputValue('customPrimary',    c[0]);
+    setInputValue('customSecondary',  c[1]);
+    setInputValue('customAccent',     c[2]);
+    setInputValue('customNeutral',    c[3]);
     setInputValue('customBase100',    '#0b0d10');
     setInputValue('customBase200',    '#18191a');
     setInputValue('customBase300',    '#242526');
     setInputValue('customBaseContent','#e4e6eb');
-
     applySystemTheme('corporate');
   }
 
@@ -508,30 +512,13 @@
   function loadSavedTheme() {
     try {
       const saved = localStorage.getItem('neon-theme');
-      if (saved && THEMES.indexOf(saved) !== -1) {
-        applySystemTheme(saved);
-        return;
-      }
+      if (saved && THEMES.indexOf(saved) !== -1) { applySystemTheme(saved); return; }
     } catch (_) {}
     try {
       const custom = localStorage.getItem('neon-custom-colors');
-      if (custom) {
-        const colors = JSON.parse(custom);
-        applyCustomColors(colors);
-        return;
-      }
+      if (custom) { applyCustomColors(JSON.parse(custom)); return; }
     } catch (_) {}
     applySystemTheme('corporate');
-  }
-
-  function loadSettings() {
-    const storedDark = localStorage.getItem('dark');
-    if (storedDark !== null) {
-      applyDarkMode(storedDark === 'true');
-    } else {
-      const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
-      applyDarkMode(prefersDark);
-    }
   }
 
   function wireCustomPanel() {
@@ -561,60 +548,7 @@
   }
 
   /* ===================================================================
-     2) FORCED DARK MODE
-     =================================================================== */
-  var DARK = {
-    '--base-100': '#0b0d10',
-    '--base-200': '#18191a',
-    '--base-300': '#242526',
-    '--base-content': '#e4e6eb',
-    '--green': '#31a24c',
-    '--amber': '#f7b928',
-    '--danger': '#f02849',
-    '--radius': '14px'
-  };
-
-  function forceDark() {
-    var html = document.documentElement;
-    html.style.colorScheme = 'dark';
-    html.style.background = DARK['--base-100'];
-    Object.keys(DARK).forEach(function (k) { html.style.setProperty(k, DARK[k]); });
-    document.body.style.background = 'var(--bg)';
-    document.body.style.color = 'var(--text)';
-
-    var cs = document.querySelector('meta[name="color-scheme"]');
-    if (!cs) { cs = document.createElement('meta'); cs.name = 'color-scheme'; document.head.appendChild(cs); }
-    cs.content = 'dark';
-
-    var tc = document.querySelector('meta[name="theme-color"]');
-    if (!tc) { tc = document.createElement('meta'); tc.name = 'theme-color'; document.head.appendChild(tc); }
-    tc.content = '#18191a';
-
-    try {
-      var native = window.matchMedia ? window.matchMedia.bind(window) : null;
-      if (native) {
-        window.matchMedia = function (q) {
-          if (/prefers-color-scheme\s*:\s*light/i.test(q)) {
-            return {
-              matches: false, media: q, onchange: null,
-              addEventListener: function () {}, removeEventListener: function () {},
-              addListener: function () {}, removeListener: function () {},
-              dispatchEvent: function () { return false; }
-            };
-          }
-          return native(q);
-        };
-      }
-    } catch (e) {}
-  }
-
-  function applyDarkMode(isDark) {
-    forceDark();
-    try { localStorage.setItem('dark', 'true'); } catch (_) {}
-  }
-
-  /* ===================================================================
-     3) DOM refs + helpers
+     2) DOM refs + helpers
      =================================================================== */
   var $ = function (s) { return document.querySelector(s); };
 
@@ -738,7 +672,7 @@
   }
 
   /* ===================================================================
-     4) URL normalisation + variants
+     3) URL normalisation + variants
      =================================================================== */
   function normalizeUrl(raw) {
     var u = String(raw || '').trim();
@@ -759,7 +693,6 @@
     return p.toString();
   }
 
-  /* Detect feed pages — these list many posts, not one downloadable item */
   function isFeedUrl(u) {
     try {
       var p = new URL(u);
@@ -774,13 +707,15 @@
     return null;
   }
 
-  /* Build URL variants: original, mbasic, noscript, plugin embeds */
   function variantsOf(target) {
     var out = [{ url: target, label: 'www' }];
     try {
       var t = target.toLowerCase();
 
       if (!/fb\.watch|messenger\.com/.test(t)) {
+        var wb = new URL(target); wb.hostname = 'web.facebook.com';
+        if (wb.toString() !== target) out.push({ url: wb.toString(), label: 'web' });
+
         var mb = new URL(target); mb.hostname = 'mbasic.facebook.com';
         if (mb.toString() !== target) out.push({ url: mb.toString(), label: 'mbasic' });
 
@@ -788,7 +723,6 @@
         if (ns.toString() !== target) out.push({ url: ns.toString(), label: 'noscript' });
       }
 
-      /* Plugin embeds are publicly embeddable — often bypass login walls */
       var isVideo = /\/(watch|videos|reel|share\/v|video\.php)/.test(t) || /story\.php/.test(t) || /permalink\.php/.test(t);
       var isPost  = /\/(posts|photos|permalink|photo\.php)/.test(t) || /story\.php/.test(t);
 
@@ -809,7 +743,7 @@
   }
 
   /* ===================================================================
-     5) Media extraction
+     4) Media extraction
      =================================================================== */
   function unescapeMedia(s) {
     return String(s)
@@ -830,31 +764,70 @@
   var EXT_RE  = /\.(mp4|m4v|webm|mov|ogv|jpg|jpeg|png|webp|gif|mp3|m4a|aac|wav|opus|ogg)(\?|#|&|$)/i;
   var JUNK_RE = /static\.xx\.fbcdn\.net|static\.xx\.fbsbx|\/rsrc\.php|\/rsrc\/|emoji\.php|sprite|\.svg(\?|#|$)/i;
 
+  var VIDEO_KEYS = [
+    'browser_native_hd_url',
+    'browser_native_sd_url',
+    'playable_url_quality_hd',
+    'playable_url_quality_sd',
+    'playable_url',
+    'playable_url_dash',
+    'spherical_playable_url',
+    'hd_src_no_ratelimit',
+    'sd_src_no_ratelimit',
+    'hd_src',
+    'sd_src',
+    'video_url',
+    'video_hd_url',
+    'video_sd_url',
+    'progressive_url',
+    'src'
+  ];
+
   function extractMedia(raw) {
     var src = unescapeMedia(raw);
-    var out = [];
+    var items = [];
     var seen = Object.create(null);
 
-    function push(u) {
+    function push(u, forcedKind) {
       if (!u) return;
-      u = String(u).trim().replace(/[)\]}>,'"!]+$/, '');
+      u = String(u).trim().replace(/[)\]}>,'"!;]+$/, '');
       if (!/^https?:\/\//i.test(u)) return;
       if (u.length < 24) return;
       if (JUNK_RE.test(u)) return;
-      if (!EXT_RE.test(u)) return;
+      if (!forcedKind && !EXT_RE.test(u) && !/fbcdn\.net/i.test(u)) return;
+
+      var kind = forcedKind || kindOf(u);
       var key;
       try { var p = new URL(u); key = p.hostname + p.pathname; }
       catch (e) { key = u; }
       if (seen[key]) return;
       seen[key] = 1;
-      out.push(u);
+      items.push({ url: u, kind: kind });
     }
 
     var m;
 
-    var KEY_RE = /"(playable_url_quality_hd|playable_url|browser_native_hd_url|browser_native_sd_url|hd_src_no_ratelimit|sd_src_no_ratelimit|hd_src|sd_src|video_url|audio_url)"\s*:\s*"([^"]{16,})"/g;
-    while ((m = KEY_RE.exec(src)) !== null) push(m[2]);
+    // 1. Trusted JSON keys
+    var VIDEO_RE = new RegExp(
+      '"(' + VIDEO_KEYS.join('|') + ')"\\s*:\\s*"([^"\\\\]{16,})"',
+      'g'
+    );
+    while ((m = VIDEO_RE.exec(src)) !== null) {
+      var u = m[2];
+      try { u = JSON.parse('"' + u.replace(/"/g, '\\"') + '"'); } catch (e) {}
+      var keyName = m[1];
+      var isVid = /video|play|src|hd|sd|dash|progressive/i.test(keyName) &&
+                  !/photo|image|picture|thumb|icon/i.test(keyName);
+      push(u, isVid ? 'video' : null);
+    }
 
+    // 2. HTML5 video/source tags
+    var VIDEO_TAG_RE = /<(?:video|source)\b[^>]*\bsrc=["']([^"']+)["']/gi;
+    while ((m = VIDEO_TAG_RE.exec(src)) !== null) {
+      push(unescapeMedia(m[1]), 'video');
+    }
+
+    // 3. Meta tags
     var META_RE = /<meta\b[^>]*>/gi;
     var WANT = /(og:video|og:video:url|og:video:secure_url|og:image|og:image:secure_url|og:audio|twitter:player:stream|twitter:image)/i;
     var tag;
@@ -862,16 +835,21 @@
       var t = tag[0];
       if (!WANT.test(t)) continue;
       var c = t.match(/content\s*=\s*["']([^"']+)["']/i);
-      if (c) push(c[1]);
+      if (!c) continue;
+      var isVideoMeta = /og:video|twitter:player:stream/i.test(t);
+      push(c[1], isVideoMeta ? 'video' : null);
     }
 
+    // 4. Generic sweep
     var URL_RE = /https?:\/\/[^\s"'`<>\\^{}|]+/g;
-    while ((m = URL_RE.exec(src)) !== null) push(m[0]);
+    while ((m = URL_RE.exec(src)) !== null) {
+      push(m[0], null);
+    }
 
     var order = { video: 0, photo: 1, audio: 2 };
-    out.sort(function (a, b) { return order[kindOf(a)] - order[kindOf(b)]; });
+    items.sort(function (a, b) { return order[a.kind] - order[b.kind]; });
 
-    return out.slice(0, 30);
+    return items.slice(0, 30);
   }
 
   function extractPoster(raw) {
@@ -917,10 +895,13 @@
   function kindOf(u) {
     if (/\.(mp4|m4v|webm|mov|ogv)(\?|#|&|$)/i.test(u)) return 'video';
     if (/\.(mp3|m4a|aac|wav|opus|ogg)(\?|#|&|$)/i.test(u)) return 'audio';
+    if (/^https?:\/\/video[\w.-]*\.fbcdn\.net\//i.test(u)) return 'video';
+    if (/\/v\/t42\.\d+-/i.test(u)) return 'video';
+    if (/fbcdn\.net.*\.mp4/i.test(u)) return 'video';
     return 'photo';
   }
 
-  function looksLikeDirectMedia(u) { return EXT_RE.test(u); }
+  function looksLikeDirectMedia(u) { return EXT_RE.test(u) || /^https?:\/\/video[\w.-]*\.fbcdn\.net\//i.test(u); }
 
   function fileNameFor(u, kind) {
     var clean = u.split('#')[0].split('?')[0];
@@ -940,20 +921,12 @@
     return /Log in to Facebook|You must log in|Log into Facebook|Sign up for Facebook|Please log in|Create new account|忘记账户|登录|登入/i.test(head);
   }
 
-  /* Detect a feed / listing page (many videos, but no single downloadable post) */
   function looksLikeFeedContent(text) {
     var s = String(text).slice(0, 25000);
     var markers = [
-      /热门视频/,                                    // trending videos (CN)
-      /Popular\s+Videos?/i,
-      /Top\s+Videos?/i,
-      /Trending\s+Videos?/i,
-      /Watch\s+more/i,
-      /See\s+more\s+on\s+Facebook/i,
-      /上\s*Facebook\s*查看更多内容/i,
-      /Discover\s+Videos?/i,
-      /Suggested\s+for\s+you/i,
-      /Explore\s+Videos?/i,
+      /热门视频/, /Popular\s+Videos?/i, /Top\s+Videos?/i, /Trending\s+Videos?/i,
+      /Watch\s+more/i, /See\s+more\s+on\s+Facebook/i, /上\s*Facebook\s*查看更多内容/i,
+      /Discover\s+Videos?/i, /Suggested\s+for\s+you/i, /Explore\s+Videos?/i,
       /more\s+content\s+on\s+Facebook/i
     ];
     var score = 0;
@@ -962,45 +935,92 @@
   }
 
   /* ===================================================================
-     6) Reader pipeline — 10 readers × up to 5 variants
+     5) Cobalt API (multi-instance) + Reader pipeline
      =================================================================== */
+  var COBALT_INSTANCES = [
+    'https://cobalt-api.kwiatekmiki.com',
+    'https://cobalt-backend.canine.tools',
+    'https://cobalt.canine.tools',
+    'https://api.cobalt.tools',
+    'https://cobalt-api.meowing.de'
+  ];
+
+  async function fetchCobalt(target) {
+    for (var i = 0; i < COBALT_INSTANCES.length; i++) {
+      var base = COBALT_INSTANCES[i];
+      var host = base.replace(/^https?:\/\//, '');
+      try {
+        log('→ Cobalt: ' + host);
+        var res = await fetchWithTimeout(base + '/', {
+          method: 'POST',
+          headers: {
+            'Accept': 'application/json',
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({
+            url: target,
+            vQuality: '1080',
+            videoQuality: '1080',
+            filenameStyle: 'basic'
+          })
+        }, 14000);
+
+        if (!res.ok) throw new Error('HTTP ' + res.status);
+
+        var txt = await res.text();
+        var data;
+        try { data = JSON.parse(txt); }
+        catch (e) { throw new Error('non-JSON response'); }
+
+        if (data.status === 'error') {
+          var code = (data.error && (data.error.code || data.error.message)) || 'error';
+          throw new Error(String(code));
+        }
+
+        var items = [];
+
+        if (data.status === 'tunnel' || data.status === 'redirect' || data.status === 'stream') {
+          if (data.url) {
+            items.push({
+              url: data.url,
+              kind: 'video',
+              filename: data.filename || null,
+              thumb: data.thumb || null
+            });
+          }
+        } else if (data.status === 'picker' && Array.isArray(data.picker)) {
+          data.picker.forEach(function (p) {
+            if (!p || !p.url) return;
+            var k = (p.type === 'video') ? 'video' : (p.type === 'photo') ? 'photo' : 'video';
+            items.push({ url: p.url, kind: k, thumb: p.thumb || null, filename: null });
+          });
+        } else if (data.url) {
+          items.push({ url: data.url, kind: 'video', thumb: data.thumb || null, filename: data.filename || null });
+        }
+
+        if (!items.length) throw new Error('no media in response');
+
+        log('✓ Cobalt (' + host + ') — ' + items.length + ' item(s)', 'ok');
+        return items;
+
+      } catch (e) {
+        log('✗ Cobalt (' + host + ') — ' + formatReaderError(e), 'warn');
+      }
+    }
+    return null;
+  }
+
   var READERS = [
-    /* Jina AI — markdown (fast, reliable, free unlimited) */
     { name: 'Jina AI',   build: function (t) { return 'https://r.jina.ai/' + t; } },
-
-    /* Jina AI — HTML mode (richer: keeps meta tags + JSON payloads) */
-    { name: 'Jina HTML', build: function (t) { return 'https://r.jina.ai/' + t; },
-      headers: { 'X-Respond-With': 'html' } },
-
-    /* AllOrigins raw */
     { name: 'AllOrigins', build: function (t) { return 'https://api.allorigins.win/raw?url=' + encodeURIComponent(t); } },
-
-    /* AllOrigins JSON (fallback if raw fails) */
     { name: 'AllOrigins-J', build: function (t) { return 'https://api.allorigins.win/get?url=' + encodeURIComponent(t); },
       json: 'contents' },
-
-    /* CodeTabs */
     { name: 'CodeTabs', build: function (t) { return 'https://api.codetabs.com/v1/proxy?quest=' + encodeURIComponent(t); } },
-
-    /* cors.lol */
     { name: 'cors.lol', build: function (t) { return 'https://api.cors.lol/?url=' + encodeURIComponent(t); } },
-
-    /* corsproxy.io */
     { name: 'corsproxy.io', build: function (t) { return 'https://corsproxy.io/?url=' + encodeURIComponent(t); } },
-
-    /* cors.eu.org */
-    { name: 'cors.eu.org', build: function (t) { return 'https://cors.eu.org/' + t; } },
-
-    /* Microlink — AI metadata extraction (free tier, unlimited basic) */
     { name: 'Microlink', build: function (t) {
         return 'https://api.microlink.io/?url=' + encodeURIComponent(t) + '&meta=true&video=true&audio=true';
-      }, json: 'data' },
-
-    /* htmldriven */
-    { name: 'htmldriven', build: function (t) { return 'https://cors-proxy.htmldriven.com/?url=' + encodeURIComponent(t); } },
-
-    /* ThingProxy (slow but sometimes works) */
-    { name: 'ThingProxy', build: function (t) { return 'https://thingproxy.freeboard.io/fetch/' + t; } }
+      }, json: 'data' }
   ];
 
   function fetchWithTimeout(url, opts, ms) {
@@ -1031,12 +1051,11 @@
     var opts = { method: 'GET', redirect: 'follow', cache: 'no-store' };
     if (reader.headers) opts.headers = reader.headers;
 
-    var res = await fetchWithTimeout(reader.build(target), opts, 6500);
+    var res = await fetchWithTimeout(reader.build(target), opts, 7000);
     if (!res.ok) throw new Error(statusMessageFor(res.status));
 
     var txt = await res.text();
 
-    /* Jina returns this when upstream gives a 301 */
     if (/status code:\s*30[1278]/i.test(txt)) {
       throw new Error('upstream 301/302 redirect (likely feed page)');
     }
@@ -1053,7 +1072,6 @@
     return txt;
   }
 
-  /* Robust loop: readers × variants × 2 attempts, 60 s global deadline */
   async function readPage(target) {
     var variants = variantsOf(target);
     var errors = [];
@@ -1072,28 +1090,24 @@
         var v = variants[j];
         var tag = r.name + (j === 0 ? '' : ' · ' + v.label);
 
-        for (var attempt = 1; attempt <= 2; attempt++) {
-          attemptNo++;
-          setStatus('Reader ' + (i + 1) + '/' + READERS.length + ' · ' + tag +
-                    '… (attempt ' + attemptNo + ')', 'busy');
+        attemptNo++;
+        setStatus('Reader ' + (i + 1) + '/' + READERS.length + ' · ' + tag +
+                  '… (attempt ' + attemptNo + ')', 'busy');
 
-          try {
-            var txt = await tryRead(r, v.url);
-            if (!txt || txt.length < 100) throw new Error('empty');
-            if (looksLikeLoginWall(txt)) {
-              log('⚠ ' + tag + ' — login wall', 'warn');
-              errors.push(tag + ': login wall');
-              break;
-            }
-            log('✓ ' + tag + ' — ' + txt.length + ' chars', 'ok');
-            return { text: txt, reader: tag, variant: v.label };
-          } catch (e) {
-            var m = formatReaderError(e);
-            if (attempt === 2 || /HTTP 4|login wall|empty|redirect/i.test(m)) {
-              log('✗ ' + tag + ' — ' + m, 'warn');
-              errors.push(tag + ': ' + m);
-            }
+        try {
+          var txt = await tryRead(r, v.url);
+          if (!txt || txt.length < 100) throw new Error('empty');
+          if (looksLikeLoginWall(txt)) {
+            log('⚠ ' + tag + ' — login wall', 'warn');
+            errors.push(tag + ': login wall');
+            break;
           }
+          log('✓ ' + tag + ' — ' + txt.length + ' chars', 'ok');
+          return { text: txt, reader: tag, variant: v.label };
+        } catch (e) {
+          var mm = formatReaderError(e);
+          log('✗ ' + tag + ' — ' + mm, 'warn');
+          errors.push(tag + ': ' + mm);
         }
       }
     }
@@ -1102,18 +1116,18 @@
   }
 
   /* ===================================================================
-     7) Poster / profile card
+     6) Poster / profile card
      =================================================================== */
   function renderPoster(poster, meta) {
-    if (!poster && !meta.title) { posterCard.classList.add('hidden'); return; }
+    if (!poster && (!meta || !meta.title)) { posterCard.classList.add('hidden'); return; }
 
-    var name = cleanProfileName(meta.title || '');
+    var name = cleanProfileName((meta && meta.title) || '');
     if (!name) name = 'Facebook Post';
 
     posterName.innerHTML = '<i class="fa-solid fa-user"></i>';
     posterName.appendChild(document.createTextNode(name));
 
-    if (meta.description) {
+    if (meta && meta.description) {
       posterDesc.textContent = meta.description;
       posterDesc.classList.remove('hidden');
     } else {
@@ -1138,132 +1152,239 @@
 
   function filterPoster(items, poster) {
     if (!poster) return items;
-    var hasVideo = items.some(function (u) { return kindOf(u) === 'video'; });
+    var hasVideo = items.some(function (it) { return it.kind === 'video'; });
     if (!hasVideo) return items;
-    return items.filter(function (u) {
+    return items.filter(function (it) {
       try {
-        var a = new URL(u), b = new URL(poster);
+        var a = new URL(it.url), b = new URL(poster);
         return !(a.hostname === b.hostname && a.pathname === b.pathname);
       } catch (e) { return true; }
     });
   }
 
   /* ===================================================================
-     8) Results rendering
+     7) Results rendering — Grouped by Section (with WORKING video preview)
      =================================================================== */
-  function renderResults(urls) {
+  function renderResults(items, posterUrl) {
     resultsEl.innerHTML = '';
-    if (!urls.length) return;
+    if (!items.length) return;
 
-    urls.forEach(function (u) {
-      var kind = kindOf(u);
-      var card = document.createElement('div');
-      card.className = 'card media';
+    var groups = {
+      video: items.filter(function(it) { return it.kind === 'video'; }),
+      photo: items.filter(function(it) { return it.kind === 'photo'; }),
+      audio: items.filter(function(it) { return it.kind === 'audio'; })
+    };
 
-      var thumb = document.createElement('div');
-      thumb.className = 'thumb';
+    function createSection(title, iconClass, type, mediaList) {
+      if (!mediaList.length) return;
 
-      if (kind === 'photo') {
-        var img = new Image();
-        img.loading = 'lazy';
-        img.decoding = 'async';
-        img.referrerPolicy = 'no-referrer';
-        img.alt = 'Facebook photo';
-        img.onerror = function () {
-          thumb.className = 'thumb broken';
-          thumb.textContent = 'Preview blocked by Facebook — use Download / Open.';
-        };
-        img.src = u;
-        thumb.appendChild(img);
-      } else if (kind === 'video') {
-        var v = document.createElement('video');
-        v.src = u;
-        v.controls = true;
-        v.playsInline = true;
-        v.preload = 'metadata';
-        v.referrerPolicy = 'no-referrer';
-        v.onerror = function () {
-          thumb.className = 'thumb broken';
-          thumb.textContent = 'Video preview unavailable — use Download or MP3.';
-        };
-        thumb.appendChild(v);
-      } else {
-        var a = document.createElement('audio');
-        a.src = u;
-        a.controls = true;
-        a.preload = 'none';
-        thumb.appendChild(a);
-      }
+      var section = document.createElement('div');
+      section.className = 'media-section';
 
-      var meta = document.createElement('div');
-      meta.className = 'meta';
-      var tagEl = document.createElement('span');
-      tagEl.className = 'tag ' + kind;
-      tagEl.textContent = kind.toUpperCase();
-      var fname = document.createElement('span');
-      fname.className = 'fname';
-      fname.textContent = fileNameFor(u, kind);
-      meta.appendChild(tagEl);
-      meta.appendChild(fname);
+      var titleEl = document.createElement('div');
+      titleEl.className = 'section-title';
+      titleEl.innerHTML = '<i class="' + iconClass + '"></i> ' + title +
+        ' <span style="font-size:12px;color:var(--muted);font-weight:400">(' + mediaList.length + ')</span>';
+      section.appendChild(titleEl);
 
-      var actions = document.createElement('div');
-      actions.className = 'actions';
+      var grid = document.createElement('div');
+      grid.className = 'section-grid';
 
-      var dl = mkBtn('fa-solid fa-download', 'Download', 'primary');
-      dl.addEventListener('click', function () {
-        downloadMedia(u, fileNameFor(u, kind), dl);
-      });
-      actions.appendChild(dl);
+      mediaList.forEach(function (item) {
+        var u = item.url;
+        var kind = item.kind;
+        var itemPoster = item.thumb || posterUrl || null;
 
-      if (kind === 'video' || kind === 'audio') {
-        var mp3 = mkBtn('fa-solid fa-music', 'MP3', '');
-        mp3.addEventListener('click', function () {
-          convertToMp3(u, fileNameFor(u, kind), mp3);
-        });
-        actions.appendChild(mp3);
-      }
+        var card = document.createElement('div');
+        card.className = 'card media';
 
-      var copy = mkBtn('fa-solid fa-link', 'Copy', 'ghost');
-      copy.addEventListener('click', async function () {
-        try {
-          await navigator.clipboard.writeText(u);
-          flash(copy, 'fa-solid fa-check', 'Copied');
-        } catch (e) {
-          log(u);
-          setStatus('Clipboard blocked — link printed in console.', 'warn');
+        var thumb = document.createElement('div');
+        thumb.className = 'thumb';
+
+        if (kind === 'photo') {
+          var img = new Image();
+          img.loading = 'lazy';
+          img.decoding = 'async';
+          img.referrerPolicy = 'no-referrer';
+          img.alt = 'Facebook photo';
+          img.onerror = function () {
+            thumb.innerHTML = '';
+            thumb.className = 'thumb broken';
+            thumb.textContent = 'Preview blocked by Facebook — tap Open or Download.';
+          };
+          img.src = u;
+          thumb.appendChild(img);
+
+        } else if (kind === 'video') {
+          // REAL video preview using <video> with referrerPolicy
+          var v = document.createElement('video');
+          v.controls = true;
+          v.playsInline = true;
+          v.setAttribute('webkit-playsinline', '');
+          v.preload = 'metadata';
+          v.referrerPolicy = 'no-referrer';
+          v.setAttribute('disablepictureinpicture', 'false');
+          if (itemPoster) v.poster = itemPoster;
+          v.src = u;
+
+          var fallback = document.createElement('div');
+          fallback.className = 'thumb-fallback hidden';
+          fallback.innerHTML = '<i class="fa-solid fa-circle-exclamation"></i><p>Preview blocked by Facebook</p>';
+
+          var openBtn = mkBtn('fa-solid fa-play', 'Play in new tab', 'primary');
+          openBtn.addEventListener('click', function (e) {
+            e.stopPropagation();
+            window.open(u, '_blank', 'noopener');
+          });
+          fallback.appendChild(openBtn);
+
+          var errored = false;
+          function showFallback() {
+            if (errored) return;
+            errored = true;
+            try { v.pause(); } catch (e) {}
+            v.style.visibility = 'hidden';
+            v.style.position = 'absolute';
+            v.style.height = '0';
+            fallback.classList.remove('hidden');
+            thumb.style.minHeight = '200px';
+          }
+
+          v.addEventListener('error', showFallback);
+          // Safety net: if metadata hasn't loaded in 18s, show fallback
+          var guard = setTimeout(function () {
+            if (v.readyState === 0) showFallback();
+          }, 18000);
+          v.addEventListener('loadedmetadata', function () { clearTimeout(guard); });
+          v.addEventListener('canplay', function () { clearTimeout(guard); });
+
+          thumb.appendChild(v);
+          thumb.appendChild(fallback);
+
+        } else {
+          var a = document.createElement('audio');
+          a.src = u;
+          a.controls = true;
+          a.preload = 'none';
+          thumb.appendChild(a);
         }
+
+        var meta = document.createElement('div');
+        meta.className = 'meta';
+
+        var tagEl = document.createElement('span');
+        tagEl.className = 'tag ' + kind;
+        tagEl.textContent = kind.toUpperCase();
+        meta.appendChild(tagEl);
+
+        if (kind === 'video' && /_hd|hd_|1080|720/i.test(u)) {
+          var hd = document.createElement('span');
+          hd.className = 'tag hd';
+          hd.textContent = 'HD';
+          meta.appendChild(hd);
+        }
+
+        var fname = document.createElement('span');
+        fname.className = 'fname';
+        fname.textContent = item.filename || fileNameFor(u, kind);
+        meta.appendChild(fname);
+
+        var actions = document.createElement('div');
+        actions.className = 'actions';
+
+        var dlLabel = kind === 'video' ? 'Download MP4'
+                    : kind === 'audio' ? 'Download MP3'
+                    : 'Download JPG';
+        var dlIcon  = kind === 'video' ? 'fa-solid fa-file-video'
+                    : kind === 'audio' ? 'fa-solid fa-file-audio'
+                    : 'fa-solid fa-file-image';
+
+        var dl = mkBtn(dlIcon, dlLabel, 'primary');
+        dl.addEventListener('click', function () {
+          downloadMedia(u, item.filename || fileNameFor(u, kind), dl);
+        });
+        actions.appendChild(dl);
+
+        if (kind === 'video' || kind === 'audio') {
+          var mp3 = mkBtn('fa-solid fa-music', 'Extract MP3', '');
+          mp3.addEventListener('click', function () {
+            convertToMp3(u, item.filename || fileNameFor(u, kind), mp3);
+          });
+          actions.appendChild(mp3);
+        }
+
+        var copy = mkBtn('fa-solid fa-link', 'Copy', 'ghost');
+        copy.addEventListener('click', async function () {
+          try {
+            await navigator.clipboard.writeText(u);
+            flash(copy, 'fa-solid fa-check', 'Copied');
+          } catch (e) {
+            log(u);
+            setStatus('Clipboard blocked — link printed in console.', 'warn');
+          }
+        });
+        actions.appendChild(copy);
+
+        var open = mkBtn('fa-solid fa-arrow-up-right-from-square', 'Open', 'ghost');
+        open.addEventListener('click', function () { window.open(u, '_blank', 'noopener'); });
+        actions.appendChild(open);
+
+        card.appendChild(thumb);
+        card.appendChild(meta);
+        card.appendChild(actions);
+        grid.appendChild(card);
       });
-      actions.appendChild(copy);
 
-      var open = mkBtn('fa-solid fa-arrow-up-right-from-square', 'Open', 'ghost');
-      open.addEventListener('click', function () { window.open(u, '_blank', 'noopener'); });
-      actions.appendChild(open);
+      section.appendChild(grid);
+      resultsEl.appendChild(section);
+    }
 
-      card.appendChild(thumb);
-      card.appendChild(meta);
-      card.appendChild(actions);
-      resultsEl.appendChild(card);
-    });
+    createSection('Videos', 'fa-solid fa-video', 'video', groups.video);
+    createSection('Photos & Posts', 'fa-solid fa-image', 'photo', groups.photo);
+    createSection('Audio', 'fa-solid fa-music', 'audio', groups.audio);
   }
 
   /* ===================================================================
-     9) Direct download
+     8) Robust media fetch (direct → CORS proxies)
      =================================================================== */
+  async function fetchMediaBuffer(url, timeoutMs) {
+    var attempts = [
+      { name: 'direct',    u: url, opts: { mode: 'cors', credentials: 'omit' } },
+      { name: 'allorigins', u: 'https://api.allorigins.win/raw?url=' + encodeURIComponent(url), opts: {} },
+      { name: 'codetabs',  u: 'https://api.codetabs.com/v1/proxy?quest=' + encodeURIComponent(url), opts: {} },
+      { name: 'corsproxy', u: 'https://corsproxy.io/?url=' + encodeURIComponent(url), opts: {} }
+    ];
+    var lastErr = null;
+    for (var i = 0; i < attempts.length; i++) {
+      var a = attempts[i];
+      try {
+        log('Fetch [' + a.name + ']…');
+        var res = await fetchWithTimeout(a.u, a.opts, timeoutMs || 45000);
+        if (!res.ok) throw new Error('HTTP ' + res.status);
+        var blob = await res.blob();
+        if (!blob.size) throw new Error('empty');
+        log('✓ Fetch [' + a.name + '] ' + fmtSize(blob.size), 'ok');
+        return blob;
+      } catch (e) {
+        lastErr = e;
+        log('✗ Fetch [' + a.name + '] — ' + e.message, 'warn');
+      }
+    }
+    throw lastErr || new Error('all fetch attempts failed');
+  }
+
   async function downloadMedia(url, filename, btn) {
     var oldLabel = btn ? getBtnLabel(btn) : '';
     if (btn) { btn.disabled = true; setBtnLabel(btn, 'Downloading…'); }
 
     try {
       log('Downloading ' + filename);
-      var res = await fetchWithTimeout(url, { mode: 'cors' }, 60000);
-      if (!res.ok) throw new Error('HTTP ' + res.status);
-      var blob = await res.blob();
-      if (!blob.size) throw new Error('empty file');
+      var blob = await fetchMediaBuffer(url, 60000);
       saveBlob(blob, filename);
       log('Saved ' + filename + ' (' + fmtSize(blob.size) + ')', 'ok');
-      setStatus('Saved: ' + filename, 'ok');
+      setStatus('Saved: ' + filename + ' (' + fmtSize(blob.size) + ')', 'ok');
     } catch (e) {
-      log('Direct download blocked (' + e.message + ') → opening in new tab.', 'warn');
+      log('Download blocked (' + e.message + ') → opening in new tab.', 'warn');
       window.open(url, '_blank', 'noopener');
       setStatus('Opened in a new tab — long-press / right-click → “Save video as…”.', 'warn');
     } finally {
@@ -1272,7 +1393,7 @@
   }
 
   /* ===================================================================
-     10) ffmpeg.wasm — MP4 → MP3
+     9) ffmpeg.wasm — MP4 → MP3
      =================================================================== */
   var FF = null;
   var ffLoading = null;
@@ -1341,10 +1462,8 @@
 
       try {
         setStatus('Fetching video for MP3 encoding…', 'busy');
-        log('Fetching video source…');
-        var res = await fetchWithTimeout(url, { mode: 'cors' }, 45000);
-        if (!res.ok) throw new Error('HTTP ' + res.status);
-        buf = new Uint8Array(await res.arrayBuffer());
+        var blob = await fetchMediaBuffer(url, 45000);
+        buf = new Uint8Array(await blob.arrayBuffer());
         if (!buf.length) throw new Error('empty video');
         var em = url.match(/\.(mp4|m4v|webm|mov|ogv)(?=\?|#|&|$)/i);
         if (em) ext = '.' + em[1].toLowerCase();
@@ -1371,11 +1490,11 @@
       await ff.run('-i', inName, '-vn', '-acodec', 'libmp3lame', '-q:a', '2', outName);
 
       var data = ff.FS('readFile', outName);
-      var blob = new Blob([data.buffer], { type: 'audio/mpeg' });
+      var outBlob = new Blob([data.buffer], { type: 'audio/mpeg' });
       var mp3Name = filename.replace(/\.[a-z0-9]+$/i, '') + '.mp3';
-      saveBlob(blob, mp3Name);
+      saveBlob(outBlob, mp3Name);
 
-      log('MP3 ready: ' + mp3Name + ' (' + fmtSize(blob.size) + ')', 'ok');
+      log('MP3 ready: ' + mp3Name + ' (' + fmtSize(outBlob.size) + ')', 'ok');
       setStatus('MP3 saved ✓', 'ok');
 
       try { ff.FS('unlink', inName); } catch (e) {}
@@ -1390,7 +1509,7 @@
   }
 
   /* ===================================================================
-     11) Main flow
+     10) Main flow
      =================================================================== */
   var fetching = false;
 
@@ -1405,11 +1524,11 @@
 
     var target = normalizeUrl(raw);
 
-    /* Direct media URL */
+    // Direct media URL → straight to preview
     if (!target && /^https?:\/\//i.test(raw) && looksLikeDirectMedia(raw)) {
       clearPoster();
-      renderResults([raw]);
-      setStatus('Direct media URL — ready to download.', 'ok');
+      renderResults([{ url: raw, kind: kindOf(raw) }], null);
+      setStatus('Direct media URL — preview ready below.', 'ok');
       return;
     }
 
@@ -1434,20 +1553,41 @@
     log('━━ Target: ' + target);
 
     try {
+      // 1. Cobalt multi-instance
+      setStatus('Fetching via Cobalt API…', 'busy');
+      var cobaltItems = await fetchCobalt(target);
+
+      if (cobaltItems && cobaltItems.length > 0) {
+        var cobaltThumb = null;
+        for (var ci = 0; ci < cobaltItems.length; ci++) {
+          if (cobaltItems[ci].thumb) { cobaltThumb = cobaltItems[ci].thumb; break; }
+        }
+        renderPoster(cobaltThumb, { title: 'Facebook Media', description: 'Resolved via Cobalt API' });
+        renderResults(cobaltItems, cobaltThumb);
+        setStatus('Found ' + cobaltItems.length + ' item(s) via Cobalt. Tap “Download MP4”.', 'ok');
+        return;
+      }
+
+      // 2. HTML readers fallback
+      setStatus('Cobalt failed, falling back to readers…', 'busy');
       var result = await readPage(target);
       var meta   = extractMeta(result.text);
       var poster = extractPoster(result.text);
       var items  = extractMedia(result.text);
 
-      log('Extracted ' + items.length + ' media URL(s) via ' + result.reader + ' [' + result.variant + ']');
+      var vCount = items.filter(function (x) { return x.kind === 'video'; }).length;
+      var pCount = items.filter(function (x) { return x.kind === 'photo'; }).length;
+      var aCount = items.filter(function (x) { return x.kind === 'audio'; }).length;
+      log('Extracted ' + items.length + ' item(s) via ' + result.reader + ' [' + result.variant + ']' +
+          ' — ' + vCount + ' video · ' + pCount + ' photo · ' + aCount + ' audio');
 
       renderPoster(poster, meta);
       var filtered = filterPoster(items, poster);
 
       if (filtered.length) {
-        renderResults(filtered);
+        renderResults(filtered, poster);
         setStatus('Found ' + filtered.length + ' item(s) via ' + result.reader +
-                  ' [' + result.variant + ']. Tap Download or MP3.', 'ok');
+                  ' [' + result.variant + '].', 'ok');
       } else if (feedType || looksLikeFeedContent(result.text)) {
         setStatus(
           (feedType || 'This page') + ' — it lists many videos, not a single downloadable post.\n' +
@@ -1472,19 +1612,14 @@
           [
             { label: 'Open post', icon: 'fa-solid fa-arrow-up-right-from-square',
               fn: function () { window.open(target, '_blank', 'noopener'); } },
-            { label: 'Paste direct URL', icon: 'fa-solid fa-link',
-              fn: function () {
-                urlInput.value = '';
-                urlInput.placeholder = 'Paste a direct .mp4 / .jpg / .mp3 URL…';
-                urlInput.focus();
-              } }
+            { label: 'Retry', icon: 'fa-solid fa-rotate-right',
+              fn: function () { handleFetch(); } }
           ]
         );
       }
     } catch (e) {
-      log('All readers failed: ' + e.message, 'err');
+      log('All methods failed: ' + e.message, 'err');
 
-      /* Specialised feed error — the user pasted a listing URL, not a post */
       if (feedType) {
         setStatus(
           feedType + ' — this URL lists many videos, so there is no single downloadable file.\n' +
@@ -1498,7 +1633,6 @@
                 urlInput.value = '';
                 urlInput.placeholder = 'Paste a specific video / reel / post URL…';
                 urlInput.focus();
-                setStatus('Paste the URL of a single video or reel.', 'warn');
               } },
             { label: 'Retry', icon: 'fa-solid fa-rotate-right',
               fn: function () { handleFetch(); } }
@@ -1506,8 +1640,8 @@
         );
       } else {
         setStatus(
-          'Auto-fetch failed — every reader was blocked (common for private / geo-locked posts).\n' +
-          'Try: Retry · Open in browser · paste the direct media URL.',
+          'Auto-fetch failed — every engine was blocked (private / geo-locked posts).\n' +
+          'Try Retry · Open in browser · or paste the direct media URL.',
           'err',
           [
             { label: 'Retry', icon: 'fa-solid fa-rotate-right',
@@ -1530,7 +1664,7 @@
   }
 
   /* ===================================================================
-     12) Theme drawer wiring
+     11) Theme drawer wiring
      =================================================================== */
   function openThemeDrawer() {
     themeDrawer.classList.add('open');
@@ -1548,7 +1682,7 @@
   });
 
   /* ===================================================================
-     13) App events
+     12) App events
      =================================================================== */
   fetchBtn.addEventListener('click', function () { handleFetch(); });
 
@@ -1556,7 +1690,6 @@
     if (e.key === 'Enter') { e.preventDefault(); handleFetch(); }
   });
 
-  /* Auto-detect on paste */
   var autoFetchTimer = null;
   urlInput.addEventListener('paste', function () {
     clearTimeout(autoFetchTimer);
@@ -1572,7 +1705,6 @@
     }, 400);
   });
 
-  /* Auto-detect on typing */
   urlInput.addEventListener('input', function () {
     clearTimeout(autoFetchTimer);
     var v = urlInput.value.trim();
@@ -1618,17 +1750,17 @@
   });
 
   /* ===================================================================
-     14) Boot
+     13) Boot
      =================================================================== */
-  forceDark();
   buildThemeGallery();
   wireCustomPanel();
   loadSavedTheme();
-  loadSettings();
 
-  log('Hex Facebook v6 ready · forced dark mode ON');
+  log('HEXFB v10 ready');
   log('Themes: ' + THEMES.length + ' · tap the palette button in the header');
-  log('Readers: ' + READERS.length + ' · each tried across www / mbasic / noscript / plugin-video / plugin-post');
+  log('Primary engine: Cobalt API × ' + COBALT_INSTANCES.length + ' instances');
+  log('Fallback: Jina AI · AllOrigins · CodeTabs · cors.lol · corsproxy.io · Microlink');
+  log('Video preview: <video referrerpolicy="no-referrer"> with automatic fallback');
   log('MP3: ffmpeg.wasm 0.11.6 + core 0.11.0');
 
   if (location.protocol === 'file:') {
@@ -1736,7 +1868,5 @@ if (document.addEventListener) {
     });
 }
 </script>
-
-
 </body>
 </html>
