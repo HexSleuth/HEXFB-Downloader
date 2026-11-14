@@ -1,0 +1,1742 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="corporate">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
+<meta name="color-scheme" content="dark" />
+<meta name="theme-color" content="#18191a" />
+<title>HEXFB - Downloader (Video · Photos · MP3)</title>
+
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" referrerpolicy="no-referrer" />
+
+<style>
+  /* =========================================================
+     BASE THEME VARS — dark baseline; primary/secondary/accent
+     are swapped by the JS theme system. Base-100/200/300 and
+     base-content are the customisable dark tones.
+     ========================================================= */
+  :root{
+    --base-100:#0b0d10;
+    --base-200:#18191a;
+    --base-300:#242526;
+    --base-content:#e4e6eb;
+
+    --primary:#1877f2;    --primary-fg:#ffffff;
+    --secondary:#2d88ff;  --secondary-fg:#ffffff;
+    --accent:#31a24c;     --accent-fg:#ffffff;
+
+    --bg:var(--base-100);
+    --bg2:var(--base-200);
+    --card:var(--base-300);
+    --card2:color-mix(in srgb, var(--base-300) 88%, var(--base-content) 12%);
+    --text:var(--base-content);
+    --muted:color-mix(in srgb, var(--base-content) 62%, var(--base-100) 38%);
+    --line:color-mix(in srgb, var(--base-content) 16%, var(--base-100) 84%);
+
+    --green:#31a24c; --amber:#f7b928; --danger:#f02849;
+    --radius:14px;
+  }
+
+  *{box-sizing:border-box;-webkit-tap-highlight-color:transparent;}
+  html{color-scheme:dark;background:var(--bg);}
+  body{
+    margin:0;min-height:100vh;overflow-x:hidden;
+    background:var(--bg);color:var(--text);
+    font:15px/1.5 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif;
+    -webkit-font-smoothing:antialiased;
+    padding-bottom:env(safe-area-inset-bottom);
+    transition:background .25s,color .25s;
+  }
+  .hidden{display:none !important;}
+
+  .topbar{
+    position:sticky;top:0;z-index:40;display:flex;align-items:center;gap:11px;
+    padding:10px 14px;padding-top:calc(10px + env(safe-area-inset-top));
+    background:color-mix(in srgb, var(--card) 94%, transparent);
+    backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);
+    border-bottom:1px solid var(--line);
+  }
+  .hexlogo{
+    width:40px;height:40px;flex:0 0 40px;display:grid;place-items:center;
+    background:linear-gradient(140deg,var(--primary),var(--secondary));
+    clip-path:polygon(50% 0%,93% 25%,93% 75%,50% 100%,7% 75%,7% 25%);
+    font:800 19px/1 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;
+    color:var(--primary-fg);letter-spacing:-.5px;
+    filter:drop-shadow(0 2px 10px color-mix(in srgb, var(--primary) 45%, transparent));
+    transition:background .3s;
+  }
+  .brand{min-width:0;flex:1}
+  .brand h1{margin:0;font-size:16px;font-weight:800;letter-spacing:.2px;line-height:1.15}
+  .brand p{margin:1px 0 0;font-size:11.5px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+
+  .theme-btn{
+    flex:0 0 40px;width:40px;height:40px;border-radius:50%;border:1px solid var(--line);
+    background:var(--card2);color:var(--text);font-size:16px;cursor:pointer;
+    display:grid;place-items:center;transition:.15s;
+  }
+  .theme-btn:hover{background:var(--primary);color:var(--primary-fg);border-color:var(--primary)}
+  .theme-btn:active{transform:scale(.93)}
+
+  .theme-backdrop{
+    position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:90;
+    opacity:0;pointer-events:none;transition:opacity .25s;
+  }
+  .theme-backdrop.open{opacity:1;pointer-events:auto}
+  .theme-drawer{
+    position:fixed;top:0;right:0;height:100vh;width:min(92vw,420px);
+    background:var(--card);border-left:1px solid var(--line);
+    transform:translateX(100%);transition:transform .28s cubic-bezier(.4,0,.2,1);
+    z-index:100;overflow-y:auto;padding:14px;padding-bottom:calc(20px + env(safe-area-inset-bottom));
+  }
+  .theme-drawer.open{transform:translateX(0)}
+  .theme-head{
+    display:flex;align-items:center;justify-content:space-between;
+    margin-bottom:14px;position:sticky;top:0;background:var(--card);
+    padding-bottom:10px;border-bottom:1px solid var(--line);z-index:1;
+  }
+  .theme-head h2{margin:0;font-size:16px;font-weight:800;display:flex;align-items:center;gap:8px}
+  .theme-head h2 i{color:var(--primary)}
+  .theme-close{
+    width:34px;height:34px;border-radius:50%;border:0;background:var(--card2);color:var(--text);
+    cursor:pointer;font-size:14px;display:grid;place-items:center;transition:.15s;
+  }
+  .theme-close:hover{background:var(--danger);color:#fff}
+  .theme-gallery{display:grid;grid-template-columns:repeat(2,1fr);gap:8px}
+  .theme-card{
+    cursor:pointer;padding:8px;border-radius:10px;background:var(--card2);
+    border:2px solid transparent;transition:.15s;
+  }
+  .theme-card:hover{transform:translateY(-1px);border-color:var(--line)}
+  .theme-card.active{border-color:var(--primary);box-shadow:0 0 0 2px color-mix(in srgb, var(--primary) 22%, transparent)}
+  .swatch-strip{display:flex;height:20px;border-radius:6px;overflow:hidden;margin-bottom:6px}
+  .swatch-strip span{flex:1}
+  .theme-label{font-size:11px;text-transform:capitalize;display:flex;align-items:center;justify-content:space-between;color:var(--text)}
+  .theme-label .check{opacity:0;color:var(--primary);font-size:11px}
+  .theme-card.active .check{opacity:1}
+
+  .custom-panel{margin-top:18px;padding-top:14px;border-top:1px solid var(--line)}
+  .custom-panel h3{margin:0 0 10px;font-size:13px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);display:flex;align-items:center;gap:6px}
+  .custom-panel h3 i{color:var(--primary)}
+  .color-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+  .color-grid label{
+    display:flex;align-items:center;justify-content:space-between;
+    background:var(--card2);border:1px solid var(--line);border-radius:9px;
+    padding:6px 8px;font-size:11px;color:var(--muted);cursor:pointer;
+  }
+  .color-grid label span{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0;margin-right:6px}
+  .color-grid input[type=color]{
+    width:26px;height:26px;padding:0;border:1px solid var(--line);
+    border-radius:6px;background:transparent;cursor:pointer;flex:0 0 auto;
+  }
+  .color-grid input[type=color]::-webkit-color-swatch-wrapper{padding:2px}
+  .color-grid input[type=color]::-webkit-color-swatch{border:none;border-radius:4px}
+  .color-grid input[type=color]::-moz-color-swatch{border:none;border-radius:4px}
+  .custom-btns{display:flex;gap:8px;margin-top:10px}
+  .custom-btns .btn{flex:1;padding:9px;font-size:12.5px;border-radius:9px}
+
+  main{max-width:900px;margin:0 auto;padding:12px;}
+  .card{background:var(--card);border:1px solid var(--line);border-radius:var(--radius);padding:14px;margin-bottom:12px;}
+  .lbl{display:block;font-size:12px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);margin-bottom:8px}
+  .lbl i{color:var(--primary);margin-right:5px}
+
+  .inputwrap{
+    display:flex;align-items:center;gap:6px;background:var(--bg2);
+    border:1px solid var(--line);border-radius:12px;padding:3px 6px 3px 4px;
+    transition:border-color .15s,box-shadow .15s;
+  }
+  .inputwrap:focus-within{border-color:var(--primary);box-shadow:0 0 0 3px color-mix(in srgb, var(--primary) 20%, transparent)}
+  .inputwrap input{
+    flex:1;min-width:0;background:transparent;border:0;outline:0;
+    color:var(--text);font-size:15px;padding:12px 8px;font-family:inherit;
+  }
+  .inputwrap input::placeholder{color:color-mix(in srgb, var(--muted) 70%, transparent)}
+  .iconbtn{
+    flex:0 0 32px;width:32px;height:32px;border-radius:50%;border:0;
+    background:var(--card2);color:var(--muted);font-size:13px;cursor:pointer;
+    display:grid;place-items:center;transition:.15s;
+  }
+  .iconbtn:hover{background:var(--primary);color:var(--primary-fg)}
+  .iconbtn:active{transform:scale(.92)}
+
+  .row{display:flex;gap:8px;margin-top:10px}
+  .grow{flex:1}
+
+  .btn{
+    appearance:none;cursor:pointer;font-family:inherit;
+    display:inline-flex;align-items:center;justify-content:center;gap:7px;
+    padding:11px 16px;border-radius:11px;font-size:14px;font-weight:700;
+    border:1px solid var(--line);background:var(--card2);color:var(--text);
+    transition:transform .12s,background .15s,border-color .15s,opacity .15s;
+    white-space:nowrap;
+  }
+  .btn i{font-size:13px}
+  .btn:hover{background:color-mix(in srgb, var(--card2) 70%, var(--text) 8%)}
+  .btn:active{transform:scale(.97)}
+  .btn.primary{background:var(--primary);border-color:var(--primary);color:var(--primary-fg)}
+  .btn.primary:hover{filter:brightness(1.1)}
+  .btn.ghost{background:transparent}
+  .btn.ghost:hover{background:rgba(255,255,255,.06)}
+  .btn:disabled{opacity:.55;cursor:not-allowed;transform:none}
+  .linkbtn{background:none;border:0;color:var(--secondary);font:inherit;font-size:12px;cursor:pointer;padding:2px 6px;border-radius:6px;}
+  .linkbtn:hover{background:rgba(45,136,255,.12)}
+
+  .hint{margin:10px 0 0;font-size:11.5px;line-height:1.65;color:var(--muted)}
+  .hint b{color:color-mix(in srgb, var(--text) 85%, var(--muted) 15%);font-weight:700}
+
+  .status{display:flex;align-items:center;gap:10px;font-size:13.5px;line-height:1.45;flex-wrap:wrap}
+  .status.ok{border-color:rgba(49,162,76,.5)}
+  .status.warn{border-color:rgba(247,185,40,.5)}
+  .status.err{border-color:rgba(240,40,73,.5)}
+  .status .btn{flex:0 0 auto;padding:7px 12px;font-size:12px;margin-left:auto;border-radius:9px}
+  .status .btn + .btn{margin-left:0}
+  .status .status-msg{white-space:pre-line}
+  .spinner{
+    width:16px;height:16px;flex:0 0 16px;border-radius:50%;
+    border:2px solid rgba(255,255,255,.18);border-top-color:var(--secondary);
+    animation:spin .7s linear infinite;display:inline-block;
+  }
+  @keyframes spin{to{transform:rotate(360deg)}}
+
+  .poster{display:flex;align-items:center;gap:12px;animation:fadein .25s ease}
+  .poster-img{
+    width:76px;height:76px;flex:0 0 76px;border-radius:12px;object-fit:cover;
+    background:var(--card2);border:1px solid var(--line);
+  }
+  .poster-body{min-width:0;flex:1}
+  .poster-name{font-weight:800;font-size:15px;line-height:1.25;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .poster-name i{color:var(--primary);margin-right:6px;font-size:12px}
+  .poster-desc{font-size:12.5px;color:var(--muted);line-height:1.5;margin-top:2px;
+    overflow:hidden;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical}
+  @keyframes fadein{from{opacity:0;transform:translateY(-4px)}to{opacity:1;transform:none}}
+
+  #results{display:grid;gap:12px;grid-template-columns:1fr;margin-bottom:12px}
+  @media (min-width:760px){ #results{grid-template-columns:1fr 1fr} }
+
+  .media{padding:0;overflow:hidden;display:flex;flex-direction:column;margin:0}
+  .thumb{background:#000;display:flex;align-items:center;justify-content:center;min-height:110px;max-height:420px;overflow:hidden;}
+  .thumb img{width:100%;height:auto;max-height:420px;object-fit:contain;display:block}
+  .thumb video{width:100%;max-height:420px;display:block;background:#000}
+  .thumb audio{width:calc(100% - 28px);margin:22px 14px}
+  .thumb.broken{color:var(--muted);font-size:12.5px;padding:30px 16px;text-align:center;line-height:1.6}
+
+  .meta{display:flex;align-items:center;gap:8px;padding:10px 12px 4px;min-width:0}
+  .tag{flex:0 0 auto;font-size:9.5px;font-weight:800;letter-spacing:.09em;padding:3px 7px;border-radius:6px;background:var(--card2);color:var(--muted)}
+  .tag.video{background:rgba(24,119,242,.18);color:#7ab4ff}
+  .tag.photo{background:rgba(49,162,76,.18);color:#7bdc9a}
+  .tag.audio{background:rgba(247,185,40,.18);color:#ffd479}
+  .fname{font-size:11.5px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0}
+  .actions{display:flex;gap:8px;flex-wrap:wrap;padding:8px 12px 12px}
+  .actions .btn{flex:1 1 auto;padding:9px 10px;font-size:12.5px;border-radius:9px}
+  .actions .btn i{font-size:11px}
+
+  .log-card{padding:0;overflow:hidden}
+  .loghead{display:flex;align-items:center;justify-content:space-between;padding:10px 12px;border-bottom:1px solid var(--line);font-size:12px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--muted)}
+  .loghead i{color:var(--primary);margin-right:6px}
+  #log{max-height:180px;overflow:auto;padding:8px 12px;font:11.5px/1.7 ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;color:#9aa0a6;word-break:break-word}
+  #log .logline{padding:1px 0}
+  #log .ok{color:#7bdc9a}
+  #log .warn{color:#ffd479}
+  #log .err{color:#ff8095}
+
+  footer{max-width:900px;margin:4px auto 34px;padding:0 18px;color:#7d8288;font-size:11px;line-height:1.7;text-align:center}
+  footer i{color:var(--primary)}
+</style>
+</head>
+<body>
+
+<header class="topbar">
+  <div class="hexlogo">f</div>
+  <div class="brand">
+    <h1>HEXFB-Downloader</h1>
+    <p>Video · Photos · MP3 · Live preview</p>
+  </div>
+  <button id="themeBtn" class="theme-btn" aria-label="Theme"><i class="fa-solid fa-palette"></i></button>
+</header>
+
+<div class="theme-backdrop" id="themeBackdrop"></div>
+<aside class="theme-drawer" id="themeDrawer" aria-label="Theme gallery">
+  <div class="theme-head">
+    <h2><i class="fa-solid fa-swatchbook"></i> System Themes</h2>
+    <button class="theme-close" id="themeClose" aria-label="Close"><i class="fa-solid fa-xmark"></i></button>
+  </div>
+
+  <div class="theme-gallery" id="themeGallery"></div>
+
+  <div class="custom-panel">
+    <h3><i class="fa-solid fa-paintbrush"></i> Custom colors</h3>
+    <div class="color-grid">
+      <label><span>Primary</span><input type="color" id="customPrimary" value="#4b6bfb"></label>
+      <label><span>Secondary</span><input type="color" id="customSecondary" value="#7b92b2"></label>
+      <label><span>Accent</span><input type="color" id="customAccent" value="#67cba0"></label>
+      <label><span>Neutral</span><input type="color" id="customNeutral" value="#181a2a"></label>
+      <label><span>Base-100</span><input type="color" id="customBase100" value="#0b0d10"></label>
+      <label><span>Base-200</span><input type="color" id="customBase200" value="#18191a"></label>
+      <label><span>Base-300</span><input type="color" id="customBase300" value="#242526"></label>
+      <label><span>Base content</span><input type="color" id="customBaseContent" value="#e4e6eb"></label>
+    </div>
+    <div class="custom-btns">
+      <button class="btn primary" id="applyCustomBtn"><i class="fa-solid fa-check"></i> Apply</button>
+      <button class="btn ghost" id="resetThemeBtn"><i class="fa-solid fa-rotate-left"></i> Reset</button>
+    </div>
+  </div>
+</aside>
+
+<main>
+  <section class="card">
+    <label class="lbl" for="url"><i class="fa-brands fa-facebook"></i> Facebook link</label>
+    <div class="inputwrap">
+      <input id="url" type="url" inputmode="url" autocomplete="off" autocapitalize="off"
+             spellcheck="false" placeholder="Paste a specific video / reel / post URL…" />
+      <button id="pasteBtn" class="iconbtn" aria-label="Paste"><i class="fa-solid fa-paste"></i></button>
+      <button id="clearBtn" class="iconbtn" aria-label="Clear"><i class="fa-solid fa-xmark"></i></button>
+    </div>
+    <div class="row">
+      <button id="fetchBtn" class="btn primary grow"><i class="fa-solid fa-bolt"></i> Get Media</button>
+    </div>
+    <p class="hint">
+      <i class="fa-solid fa-wand-magic-sparkles"></i>
+      <b>Auto-detects</b> on paste. Works with <b>/watch/?v=…</b>, <b>/reel/&lt;id&gt;</b>, <b>/videos/&lt;id&gt;</b>,
+      <b>/share/v/&lt;id&gt;</b>, <b>/photo/…</b>, <b>fb.watch</b>, <b>/posts/…</b>.<br>
+      <b>Feed pages</b> (<b>/watch/</b> and <b>/reel/</b> with no ID) list many videos — click one first, then paste its URL.
+    </p>
+  </section>
+
+  <section class="card poster hidden" id="posterCard">
+    <img class="poster-img" id="posterImg" alt="" referrerpolicy="no-referrer" />
+    <div class="poster-body">
+      <div class="poster-name" id="posterName"></div>
+      <div class="poster-desc" id="posterDesc"></div>
+    </div>
+  </section>
+
+  <div id="status" class="card status hidden"></div>
+  <div id="results"></div>
+
+  <section class="card log-card">
+    <div class="loghead">
+      <span><i class="fa-solid fa-terminal"></i> Console</span>
+      <button id="clearLog" class="linkbtn">clear</button>
+    </div>
+    <div id="log"></div>
+  </section>
+</main>
+
+<footer>
+  Hex Facebook is a <i class="fa-solid fa-shield-halved"></i> client-side tool. Download only media you own or have rights to.<br>
+  Readers: Jina AI (text + HTML) · AllOrigins · CodeTabs · cors.lol · corsproxy.io · cors.eu.org · Microlink · htmldriven · ThingProxy
+</footer>
+
+<script>
+(function () {
+  'use strict';
+
+  /* ===================================================================
+     1) THEME SYSTEM
+     =================================================================== */
+  const THEMES = [
+    'corporate', 'cupcake', 'bumblebee', 'emerald', 'synthwave',
+    'retro', 'cyberpunk', 'valentine', 'halloween', 'garden',
+    'forest', 'aqua', 'lofi', 'pastel', 'fantasy',
+    'wireframe', 'black', 'luxury', 'dracula', 'cmyk',
+    'autumn', 'business', 'acid', 'lemonade', 'night',
+    'coffee', 'winter', 'dim', 'nord', 'sunset',
+    'caramellatte', 'abyss', 'silk'
+  ];
+
+  let currentTheme = 'corporate';
+  let customColors = {};
+
+  const THEME_SWATCHES = {
+    corporate: ['#4b6bfb', '#7b92b2', '#67cba0', '#181a2a'],
+    cupcake: ['#65c3c8', '#ef9fbc', '#eeaf3a', '#291334'],
+    bumblebee: ['#e0a82e', '#f9d72f', '#181830', '#181830'],
+    emerald: ['#66cc8a', '#377cfb', '#ea5234', '#333c4d'],
+    synthwave: ['#e779c1', '#58c7f3', '#f3cc30', '#20134e'],
+    retro: ['#ef9995', '#a4cbb4', '#ebdc99', '#7d7259'],
+    cyberpunk: ['#ff7598', '#75d1f0', '#c07eec', '#423f00'],
+    valentine: ['#e96d7b', '#a991f7', '#88dbdd', '#af4670'],
+    halloween: ['#f28c18', '#6d3a9c', '#51a800', '#1b1d1d'],
+    garden: ['#5c7f67', '#ecf4e7', '#fae5e5', '#5d5656'],
+    forest: ['#1eb854', '#1fd65f', '#d99330', '#110e0e'],
+    aqua: ['#09ecf3', '#966fb3', '#ffe999', '#3b8ea5'],
+    lofi: ['#808080', '#4d4d4d', '#1a1a1a', '#000000'],
+    pastel: ['#d1c1d7', '#f6cbd1', '#b4e9d6', '#70acc7'],
+    fantasy: ['#6e0b75', '#007ebd', '#f8860d', '#1f2937'],
+    wireframe: ['#b8b8b8', '#b8b8b8', '#b8b8b8', '#ebebeb'],
+    black: ['#333333', '#333333', '#333333', '#141414'],
+    luxury: ['#ffffff', '#152747', '#513448', '#331800'],
+    dracula: ['#ff79c6', '#bd93f9', '#ffb86c', '#414558'],
+    cmyk: ['#45aeee', '#e8488a', '#fff232', '#1a1a1a'],
+    autumn: ['#8c0327', '#d85251', '#d59b6a', '#826a5c'],
+    business: ['#1c4e80', '#7c909a', '#ea6947', '#23282e'],
+    acid: ['#ff00ff', '#ff7f00', '#c4ff00', '#150f82'],
+    lemonade: ['#519903', '#e9e92e', '#f7f9ca', '#191a3f'],
+    night: ['#38bdf8', '#818cf8', '#f472b6', '#1e293b'],
+    coffee: ['#db924b', '#263e3f', '#10576d', '#120c12'],
+    winter: ['#047aff', '#463aa2', '#c148ac', '#021431'],
+    dim: ['#9ca3af', '#6b7280', '#4b5563', '#374151'],
+    nord: ['#5e81ac', '#81a1c1', '#88c0d0', '#4c566a'],
+    sunset: ['#ff865b', '#fd6f9c', '#b387fa', '#1b1626'],
+    caramellatte: ['#d18f50', '#8e6844', '#b25828', '#3b2c23'],
+    abyss: ['#0077b6', '#00b4d8', '#90e0ef', '#03045e'],
+    silk: ['#ffc2d4', '#ffb5a7', '#fcd5ce', '#e8e8e4']
+  };
+
+  function readableFg(hex) {
+    try {
+      var c = String(hex).replace('#', '');
+      if (c.length === 3) c = c[0] + c[0] + c[1] + c[1] + c[2] + c[2];
+      var r = parseInt(c.substr(0, 2), 16);
+      var g = parseInt(c.substr(2, 2), 16);
+      var b = parseInt(c.substr(4, 2), 16);
+      var lum = (0.299 * r + 0.587 * g + 0.114 * b) / 255;
+      return lum > 0.58 ? '#0b0d10' : '#ffffff';
+    } catch (e) { return '#ffffff'; }
+  }
+
+  function setInputValue(id, val) {
+    var el = document.getElementById(id);
+    if (el) el.value = val;
+  }
+
+  function applySystemTheme(theme) {
+    currentTheme = theme;
+    document.documentElement.setAttribute('data-theme', theme);
+    document.querySelectorAll('.theme-card').forEach(function (card) {
+      card.classList.toggle('active', card.dataset.theme === theme);
+    });
+    try { localStorage.setItem('neon-theme', theme); } catch (_) {}
+
+    const c = THEME_SWATCHES[theme] || ['#4b6bfb', '#7b92b2', '#67cba0', '#181a2a'];
+    setInputValue('customPrimary',    c[0] || '#4b6bfb');
+    setInputValue('customSecondary',  c[1] || '#7b92b2');
+    setInputValue('customAccent',     c[2] || '#67cba0');
+    setInputValue('customNeutral',    c[3] || '#181a2a');
+    setInputValue('customBase100',    '#0b0d10');
+    setInputValue('customBase200',    '#18191a');
+    setInputValue('customBase300',    '#242526');
+    setInputValue('customBaseContent','#e4e6eb');
+
+    customColors = {};
+    const root = document.documentElement;
+    ['primary', 'secondary', 'accent', 'neutral',
+     'base-100', 'base-200', 'base-300', 'base-content']
+      .forEach(function (p) { root.style.removeProperty('--' + p); });
+    try { localStorage.removeItem('neon-custom-colors'); } catch (_) {}
+
+    if (THEME_SWATCHES[theme]) {
+      const s = THEME_SWATCHES[theme];
+      root.style.setProperty('--primary', s[0]);
+      root.style.setProperty('--secondary', s[1]);
+      root.style.setProperty('--accent', s[2]);
+      root.style.setProperty('--primary-fg', readableFg(s[0]));
+      root.style.setProperty('--secondary-fg', readableFg(s[1]));
+      root.style.setProperty('--accent-fg', readableFg(s[2]));
+    }
+  }
+
+  function applyCustomColors(colors) {
+    customColors = colors;
+    const root = document.documentElement;
+    Object.keys(colors).forEach(function (key) {
+      var val = colors[key];
+      if (val) root.style.setProperty('--' + key, val);
+    });
+    try { localStorage.setItem('neon-custom-colors', JSON.stringify(colors)); } catch (_) {}
+
+    if (colors.primary)   root.style.setProperty('--primary-fg',   readableFg(colors.primary));
+    if (colors.secondary) root.style.setProperty('--secondary-fg', readableFg(colors.secondary));
+    if (colors.accent)    root.style.setProperty('--accent-fg',    readableFg(colors.accent));
+  }
+
+  function resetSystemTheme() {
+    const theme = 'corporate';
+    applySystemTheme(theme);
+    customColors = {};
+    const root = document.documentElement;
+    ['primary', 'secondary', 'accent', 'neutral',
+     'base-100', 'base-200', 'base-300', 'base-content']
+      .forEach(function (p) { root.style.removeProperty('--' + p); });
+    try { localStorage.removeItem('neon-custom-colors'); } catch (_) {}
+
+    const c = THEME_SWATCHES.corporate || ['#4b6bfb', '#7b92b2', '#67cba0', '#181a2a'];
+    setInputValue('customPrimary',    c[0] || '#4b6bfb');
+    setInputValue('customSecondary',  c[1] || '#7b92b2');
+    setInputValue('customAccent',     c[2] || '#67cba0');
+    setInputValue('customNeutral',    c[3] || '#181a2a');
+    setInputValue('customBase100',    '#0b0d10');
+    setInputValue('customBase200',    '#18191a');
+    setInputValue('customBase300',    '#242526');
+    setInputValue('customBaseContent','#e4e6eb');
+
+    applySystemTheme('corporate');
+  }
+
+  function buildThemeGallery() {
+    const container = document.getElementById('themeGallery');
+    if (!container) return;
+    container.innerHTML = '';
+    THEMES.forEach(function (theme) {
+      const colors = THEME_SWATCHES[theme] || ['#4b6bfb', '#7b92b2', '#67cba0', '#181a2a'];
+      const card = document.createElement('div');
+      card.className = 'theme-card' + (theme === currentTheme ? ' active' : '');
+      card.dataset.theme = theme;
+
+      const strip = document.createElement('div');
+      strip.className = 'swatch-strip';
+      colors.forEach(function (c) {
+        const span = document.createElement('span');
+        span.style.background = c;
+        strip.appendChild(span);
+      });
+      card.appendChild(strip);
+
+      const label = document.createElement('span');
+      label.className = 'theme-label';
+      label.textContent = theme;
+      const check = document.createElement('span');
+      check.className = 'check';
+      check.innerHTML = '<i class="fa-solid fa-check"></i>';
+      label.appendChild(check);
+      card.appendChild(label);
+
+      card.addEventListener('click', function () { applySystemTheme(theme); });
+      container.appendChild(card);
+    });
+  }
+
+  function loadSavedTheme() {
+    try {
+      const saved = localStorage.getItem('neon-theme');
+      if (saved && THEMES.indexOf(saved) !== -1) {
+        applySystemTheme(saved);
+        return;
+      }
+    } catch (_) {}
+    try {
+      const custom = localStorage.getItem('neon-custom-colors');
+      if (custom) {
+        const colors = JSON.parse(custom);
+        applyCustomColors(colors);
+        return;
+      }
+    } catch (_) {}
+    applySystemTheme('corporate');
+  }
+
+  function loadSettings() {
+    const storedDark = localStorage.getItem('dark');
+    if (storedDark !== null) {
+      applyDarkMode(storedDark === 'true');
+    } else {
+      const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+      applyDarkMode(prefersDark);
+    }
+  }
+
+  function wireCustomPanel() {
+    const applyBtn = document.getElementById('applyCustomBtn');
+    if (applyBtn) {
+      applyBtn.addEventListener('click', function () {
+        applyCustomColors({
+          'primary':      document.getElementById('customPrimary').value,
+          'secondary':    document.getElementById('customSecondary').value,
+          'accent':       document.getElementById('customAccent').value,
+          'neutral':      document.getElementById('customNeutral').value,
+          'base-100':     document.getElementById('customBase100').value,
+          'base-200':     document.getElementById('customBase200').value,
+          'base-300':     document.getElementById('customBase300').value,
+          'base-content': document.getElementById('customBaseContent').value
+        });
+        log('Custom colours applied', 'ok');
+      });
+    }
+    const resetBtn = document.getElementById('resetThemeBtn');
+    if (resetBtn) {
+      resetBtn.addEventListener('click', function () {
+        resetSystemTheme();
+        log('Theme reset to corporate', 'ok');
+      });
+    }
+  }
+
+  /* ===================================================================
+     2) FORCED DARK MODE
+     =================================================================== */
+  var DARK = {
+    '--base-100': '#0b0d10',
+    '--base-200': '#18191a',
+    '--base-300': '#242526',
+    '--base-content': '#e4e6eb',
+    '--green': '#31a24c',
+    '--amber': '#f7b928',
+    '--danger': '#f02849',
+    '--radius': '14px'
+  };
+
+  function forceDark() {
+    var html = document.documentElement;
+    html.style.colorScheme = 'dark';
+    html.style.background = DARK['--base-100'];
+    Object.keys(DARK).forEach(function (k) { html.style.setProperty(k, DARK[k]); });
+    document.body.style.background = 'var(--bg)';
+    document.body.style.color = 'var(--text)';
+
+    var cs = document.querySelector('meta[name="color-scheme"]');
+    if (!cs) { cs = document.createElement('meta'); cs.name = 'color-scheme'; document.head.appendChild(cs); }
+    cs.content = 'dark';
+
+    var tc = document.querySelector('meta[name="theme-color"]');
+    if (!tc) { tc = document.createElement('meta'); tc.name = 'theme-color'; document.head.appendChild(tc); }
+    tc.content = '#18191a';
+
+    try {
+      var native = window.matchMedia ? window.matchMedia.bind(window) : null;
+      if (native) {
+        window.matchMedia = function (q) {
+          if (/prefers-color-scheme\s*:\s*light/i.test(q)) {
+            return {
+              matches: false, media: q, onchange: null,
+              addEventListener: function () {}, removeEventListener: function () {},
+              addListener: function () {}, removeListener: function () {},
+              dispatchEvent: function () { return false; }
+            };
+          }
+          return native(q);
+        };
+      }
+    } catch (e) {}
+  }
+
+  function applyDarkMode(isDark) {
+    forceDark();
+    try { localStorage.setItem('dark', 'true'); } catch (_) {}
+  }
+
+  /* ===================================================================
+     3) DOM refs + helpers
+     =================================================================== */
+  var $ = function (s) { return document.querySelector(s); };
+
+  var urlInput   = $('#url');
+  var fetchBtn   = $('#fetchBtn');
+  var pasteBtn   = $('#pasteBtn');
+  var clearBtn   = $('#clearBtn');
+  var statusEl   = $('#status');
+  var resultsEl  = $('#results');
+  var logEl      = $('#log');
+  var clearLog   = $('#clearLog');
+
+  var posterCard = $('#posterCard');
+  var posterImg  = $('#posterImg');
+  var posterName = $('#posterName');
+  var posterDesc = $('#posterDesc');
+
+  var themeBtn      = $('#themeBtn');
+  var themeDrawer   = $('#themeDrawer');
+  var themeBackdrop = $('#themeBackdrop');
+  var themeClose    = $('#themeClose');
+
+  function log(msg, type) {
+    if (!logEl) return;
+    var line = document.createElement('div');
+    line.className = 'logline ' + (type || '');
+    line.textContent = '[' + new Date().toLocaleTimeString() + '] ' + msg;
+    logEl.appendChild(line);
+    logEl.scrollTop = logEl.scrollHeight;
+    while (logEl.children.length > 300) logEl.removeChild(logEl.firstChild);
+  }
+
+  function setStatus(text, kind, actions) {
+    if (!statusEl) return;
+    if (!text) { statusEl.classList.add('hidden'); statusEl.innerHTML = ''; return; }
+    statusEl.classList.remove('hidden');
+    statusEl.className = 'card status ' + (kind || '');
+    statusEl.innerHTML = '';
+
+    if (kind === 'busy') {
+      var sp = document.createElement('span');
+      sp.className = 'spinner';
+      statusEl.appendChild(sp);
+    }
+    var t = document.createElement('span');
+    t.className = 'status-msg';
+    t.textContent = text;
+    statusEl.appendChild(t);
+
+    if (actions && actions.length) {
+      actions.forEach(function (a) {
+        var b = document.createElement('button');
+        b.className = 'btn ghost';
+        var i = document.createElement('i'); i.className = a.icon || 'fa-solid fa-arrow-right'; b.appendChild(i);
+        var s = document.createElement('span'); s.textContent = a.label; b.appendChild(s);
+        b.addEventListener('click', a.fn);
+        statusEl.appendChild(b);
+      });
+    }
+  }
+
+  function fmtSize(b) {
+    if (!b && b !== 0) return '';
+    if (b < 1024) return b + ' B';
+    if (b < 1048576) return (b / 1024).toFixed(1) + ' KB';
+    return (b / 1048576).toFixed(2) + ' MB';
+  }
+
+  function saveBlob(blob, filename) {
+    var a = document.createElement('a');
+    var u = URL.createObjectURL(blob);
+    a.href = u;
+    a.download = filename || 'hexfb-download';
+    a.rel = 'noopener';
+    document.body.appendChild(a);
+    a.click();
+    setTimeout(function () { URL.revokeObjectURL(u); a.remove(); }, 6000);
+  }
+
+  function mkBtn(icon, label, cls) {
+    var b = document.createElement('button');
+    b.className = 'btn ' + (cls || '');
+    var i = document.createElement('i'); i.className = icon || 'fa-solid fa-circle';
+    b.appendChild(i);
+    var s = document.createElement('span'); s.textContent = label; b.appendChild(s);
+    return b;
+  }
+  function setBtnLabel(btn, text) {
+    var s = btn.querySelector('span'); if (s) s.textContent = text; else btn.textContent = text;
+  }
+  function getBtnLabel(btn) {
+    var s = btn.querySelector('span'); return s ? s.textContent : btn.textContent;
+  }
+  function flash(btn, icon, text, ms) {
+    if (!btn) return;
+    var i = btn.querySelector('i');
+    var oldIcon = i ? i.className : null;
+    var oldText = getBtnLabel(btn);
+    if (i) i.className = icon;
+    setBtnLabel(btn, text);
+    setTimeout(function () {
+      if (i && oldIcon) i.className = oldIcon;
+      setBtnLabel(btn, oldText);
+    }, ms || 1300);
+  }
+
+  function pickFile(accept) {
+    return new Promise(function (resolve) {
+      var inp = document.createElement('input');
+      inp.type = 'file';
+      inp.accept = accept || 'video/*';
+      inp.style.cssText = 'position:fixed;left:-9999px;top:0;width:1px;height:1px;opacity:0';
+      document.body.appendChild(inp);
+      inp.addEventListener('change', function () {
+        var f = (inp.files && inp.files[0]) || null;
+        inp.remove();
+        resolve(f);
+      });
+      inp.click();
+    });
+  }
+
+  /* ===================================================================
+     4) URL normalisation + variants
+     =================================================================== */
+  function normalizeUrl(raw) {
+    var u = String(raw || '').trim();
+    if (!u) return null;
+    if (!/^https?:\/\//i.test(u)) u = 'https://' + u;
+    var p;
+    try { p = new URL(u); } catch (e) { return null; }
+
+    var host = p.hostname.toLowerCase();
+    if (!/(^|\.)(facebook\.com|fb\.watch|fb\.com|fb\.me|messenger\.com)$/.test(host)) return null;
+
+    if (/^(m|mbasic|web|mobile|touch)\.facebook\.com$/i.test(host)) {
+      p.hostname = 'www.facebook.com';
+    }
+    ['ref', 'refid', 'mibextid', 'sfnsn', '_rdr', 'rdid', 'paipv', 'eav', 'fbclid'].forEach(function (k) {
+      p.searchParams.delete(k);
+    });
+    return p.toString();
+  }
+
+  /* Detect feed pages — these list many posts, not one downloadable item */
+  function isFeedUrl(u) {
+    try {
+      var p = new URL(u);
+      var path = p.pathname.toLowerCase().replace(/\/$/, '');
+      if (path === '/watch' && !p.searchParams.get('v')) return 'Facebook Watch feed (list of trending videos)';
+      if (path === '/reel' || path === '/reels') return 'Facebook Reels feed (list of reels)';
+      if (path === '/videos' || path === '/video') return 'Facebook Videos feed';
+      if (path === '/photos' || path === '/photo') return 'Facebook Photos feed';
+      if (path === '/watch/live') return 'Facebook Live feed';
+      if (path === '' || path === '/') return 'Facebook home';
+    } catch (e) {}
+    return null;
+  }
+
+  /* Build URL variants: original, mbasic, noscript, plugin embeds */
+  function variantsOf(target) {
+    var out = [{ url: target, label: 'www' }];
+    try {
+      var t = target.toLowerCase();
+
+      if (!/fb\.watch|messenger\.com/.test(t)) {
+        var mb = new URL(target); mb.hostname = 'mbasic.facebook.com';
+        if (mb.toString() !== target) out.push({ url: mb.toString(), label: 'mbasic' });
+
+        var ns = new URL(target); ns.searchParams.set('_fb_noscript', '1');
+        if (ns.toString() !== target) out.push({ url: ns.toString(), label: 'noscript' });
+      }
+
+      /* Plugin embeds are publicly embeddable — often bypass login walls */
+      var isVideo = /\/(watch|videos|reel|share\/v|video\.php)/.test(t) || /story\.php/.test(t) || /permalink\.php/.test(t);
+      var isPost  = /\/(posts|photos|permalink|photo\.php)/.test(t) || /story\.php/.test(t);
+
+      if (isVideo) {
+        out.push({
+          url: 'https://www.facebook.com/plugins/video.php?href=' + encodeURIComponent(target) + '&show_text=false',
+          label: 'plugin-video'
+        });
+      }
+      if (isPost) {
+        out.push({
+          url: 'https://www.facebook.com/plugins/post.php?href=' + encodeURIComponent(target) + '&show_text=false',
+          label: 'plugin-post'
+        });
+      }
+    } catch (e) {}
+    return out;
+  }
+
+  /* ===================================================================
+     5) Media extraction
+     =================================================================== */
+  function unescapeMedia(s) {
+    return String(s)
+      .replace(/\\u0025/gi, '%')
+      .replace(/\\u0026/gi, '&')
+      .replace(/\\u003d/gi, '=')
+      .replace(/\\u003f/gi, '?')
+      .replace(/\\u002f/gi, '/')
+      .replace(/\\u003a/gi, ':')
+      .replace(/\\\//g, '/')
+      .replace(/&amp;/g, '&')
+      .replace(/&#0*38;/g, '&')
+      .replace(/&#x26;/gi, '&')
+      .replace(/&quot;/g, '"')
+      .replace(/&apos;/g, "'");
+  }
+
+  var EXT_RE  = /\.(mp4|m4v|webm|mov|ogv|jpg|jpeg|png|webp|gif|mp3|m4a|aac|wav|opus|ogg)(\?|#|&|$)/i;
+  var JUNK_RE = /static\.xx\.fbcdn\.net|static\.xx\.fbsbx|\/rsrc\.php|\/rsrc\/|emoji\.php|sprite|\.svg(\?|#|$)/i;
+
+  function extractMedia(raw) {
+    var src = unescapeMedia(raw);
+    var out = [];
+    var seen = Object.create(null);
+
+    function push(u) {
+      if (!u) return;
+      u = String(u).trim().replace(/[)\]}>,'"!]+$/, '');
+      if (!/^https?:\/\//i.test(u)) return;
+      if (u.length < 24) return;
+      if (JUNK_RE.test(u)) return;
+      if (!EXT_RE.test(u)) return;
+      var key;
+      try { var p = new URL(u); key = p.hostname + p.pathname; }
+      catch (e) { key = u; }
+      if (seen[key]) return;
+      seen[key] = 1;
+      out.push(u);
+    }
+
+    var m;
+
+    var KEY_RE = /"(playable_url_quality_hd|playable_url|browser_native_hd_url|browser_native_sd_url|hd_src_no_ratelimit|sd_src_no_ratelimit|hd_src|sd_src|video_url|audio_url)"\s*:\s*"([^"]{16,})"/g;
+    while ((m = KEY_RE.exec(src)) !== null) push(m[2]);
+
+    var META_RE = /<meta\b[^>]*>/gi;
+    var WANT = /(og:video|og:video:url|og:video:secure_url|og:image|og:image:secure_url|og:audio|twitter:player:stream|twitter:image)/i;
+    var tag;
+    while ((tag = META_RE.exec(src)) !== null) {
+      var t = tag[0];
+      if (!WANT.test(t)) continue;
+      var c = t.match(/content\s*=\s*["']([^"']+)["']/i);
+      if (c) push(c[1]);
+    }
+
+    var URL_RE = /https?:\/\/[^\s"'`<>\\^{}|]+/g;
+    while ((m = URL_RE.exec(src)) !== null) push(m[0]);
+
+    var order = { video: 0, photo: 1, audio: 2 };
+    out.sort(function (a, b) { return order[kindOf(a)] - order[kindOf(b)]; });
+
+    return out.slice(0, 30);
+  }
+
+  function extractPoster(raw) {
+    var src = unescapeMedia(raw);
+    var keys = ['og:image:secure_url', 'og:image', 'twitter:image'];
+    for (var i = 0; i < keys.length; i++) {
+      var re1 = new RegExp('<meta[^>]+(?:property|name)=["\']' + keys[i] + '["\'][^>]+content=["\']([^"\']+)["\']', 'i');
+      var re2 = new RegExp('<meta[^>]+content=["\']([^"\']+)["\'][^>]+(?:property|name)=["\']' + keys[i] + '["\']', 'i');
+      var m = src.match(re1) || src.match(re2);
+      if (m && /^https?:\/\//i.test(m[1])) return m[1];
+    }
+    return null;
+  }
+
+  function extractMeta(raw) {
+    var src = unescapeMedia(raw);
+    function get(key) {
+      var re1 = new RegExp('<meta[^>]+(?:property|name)=["\']' + key + '["\'][^>]+content=["\']([^"\']+)["\']', 'i');
+      var re2 = new RegExp('<meta[^>]+content=["\']([^"\']+)["\'][^>]+(?:property|name)=["\']' + key + '["\']', 'i');
+      var m = src.match(re1) || src.match(re2);
+      return m ? m[1] : '';
+    }
+    var title = get('og:title') || get('twitter:title');
+    var desc  = get('og:description') || get('twitter:description');
+    if (!title) {
+      var tt = src.match(/<title[^>]*>([^<]+)<\/title>/i);
+      if (tt) title = tt[1];
+    }
+    return { title: title, description: desc };
+  }
+
+  function cleanProfileName(raw) {
+    var s = String(raw || '');
+    s = s.replace(/\s*[\|\-·]\s*Facebook.*$/i, '');
+    s = s.replace(/\s*on Facebook\s*$/i, '');
+    s = s.replace(/^\(\d+\)\s*/, '');
+    s = s.replace(/\s*[|\-·]\s*Watch.*$/i, '');
+    s = s.replace(/\s*[|\-·]\s*Video.*$/i, '');
+    s = s.replace(/\s*[|\-·]\s*Reel.*$/i, '');
+    return s.trim();
+  }
+
+  function kindOf(u) {
+    if (/\.(mp4|m4v|webm|mov|ogv)(\?|#|&|$)/i.test(u)) return 'video';
+    if (/\.(mp3|m4a|aac|wav|opus|ogg)(\?|#|&|$)/i.test(u)) return 'audio';
+    return 'photo';
+  }
+
+  function looksLikeDirectMedia(u) { return EXT_RE.test(u); }
+
+  function fileNameFor(u, kind) {
+    var clean = u.split('#')[0].split('?')[0];
+    var base = clean.substring(clean.lastIndexOf('/') + 1) || '';
+    base = base.replace(/[^\w.\-]/g, '_').slice(-64);
+    if (!/\.[a-z0-9]{2,5}$/i.test(base)) {
+      base = kind === 'video' ? 'video.mp4'
+           : kind === 'audio' ? 'audio.mp3'
+           : 'photo.jpg';
+    }
+    var stamp = new Date().toISOString().replace(/[-:T]/g, '').slice(0, 14);
+    return 'hexfb_' + stamp + '_' + base;
+  }
+
+  function looksLikeLoginWall(text) {
+    var head = String(text).slice(0, 12000);
+    return /Log in to Facebook|You must log in|Log into Facebook|Sign up for Facebook|Please log in|Create new account|忘记账户|登录|登入/i.test(head);
+  }
+
+  /* Detect a feed / listing page (many videos, but no single downloadable post) */
+  function looksLikeFeedContent(text) {
+    var s = String(text).slice(0, 25000);
+    var markers = [
+      /热门视频/,                                    // trending videos (CN)
+      /Popular\s+Videos?/i,
+      /Top\s+Videos?/i,
+      /Trending\s+Videos?/i,
+      /Watch\s+more/i,
+      /See\s+more\s+on\s+Facebook/i,
+      /上\s*Facebook\s*查看更多内容/i,
+      /Discover\s+Videos?/i,
+      /Suggested\s+for\s+you/i,
+      /Explore\s+Videos?/i,
+      /more\s+content\s+on\s+Facebook/i
+    ];
+    var score = 0;
+    for (var i = 0; i < markers.length; i++) if (markers[i].test(s)) score++;
+    return score >= 2;
+  }
+
+  /* ===================================================================
+     6) Reader pipeline — 10 readers × up to 5 variants
+     =================================================================== */
+  var READERS = [
+    /* Jina AI — markdown (fast, reliable, free unlimited) */
+    { name: 'Jina AI',   build: function (t) { return 'https://r.jina.ai/' + t; } },
+
+    /* Jina AI — HTML mode (richer: keeps meta tags + JSON payloads) */
+    { name: 'Jina HTML', build: function (t) { return 'https://r.jina.ai/' + t; },
+      headers: { 'X-Respond-With': 'html' } },
+
+    /* AllOrigins raw */
+    { name: 'AllOrigins', build: function (t) { return 'https://api.allorigins.win/raw?url=' + encodeURIComponent(t); } },
+
+    /* AllOrigins JSON (fallback if raw fails) */
+    { name: 'AllOrigins-J', build: function (t) { return 'https://api.allorigins.win/get?url=' + encodeURIComponent(t); },
+      json: 'contents' },
+
+    /* CodeTabs */
+    { name: 'CodeTabs', build: function (t) { return 'https://api.codetabs.com/v1/proxy?quest=' + encodeURIComponent(t); } },
+
+    /* cors.lol */
+    { name: 'cors.lol', build: function (t) { return 'https://api.cors.lol/?url=' + encodeURIComponent(t); } },
+
+    /* corsproxy.io */
+    { name: 'corsproxy.io', build: function (t) { return 'https://corsproxy.io/?url=' + encodeURIComponent(t); } },
+
+    /* cors.eu.org */
+    { name: 'cors.eu.org', build: function (t) { return 'https://cors.eu.org/' + t; } },
+
+    /* Microlink — AI metadata extraction (free tier, unlimited basic) */
+    { name: 'Microlink', build: function (t) {
+        return 'https://api.microlink.io/?url=' + encodeURIComponent(t) + '&meta=true&video=true&audio=true';
+      }, json: 'data' },
+
+    /* htmldriven */
+    { name: 'htmldriven', build: function (t) { return 'https://cors-proxy.htmldriven.com/?url=' + encodeURIComponent(t); } },
+
+    /* ThingProxy (slow but sometimes works) */
+    { name: 'ThingProxy', build: function (t) { return 'https://thingproxy.freeboard.io/fetch/' + t; } }
+  ];
+
+  function fetchWithTimeout(url, opts, ms) {
+    var ctrl = new AbortController();
+    var id = setTimeout(function () { ctrl.abort(); }, ms || 7000);
+    var merged = Object.assign({}, opts || {}, { signal: ctrl.signal });
+    return fetch(url, merged).finally(function () { clearTimeout(id); });
+  }
+
+  function statusMessageFor(code) {
+    if (code === 451) return 'HTTP 451 — blocked';
+    if (code === 403) return 'HTTP 403 — forbidden';
+    if (code === 429) return 'HTTP 429 — rate limited';
+    if (code === 404) return 'HTTP 404 — not found';
+    if (code === 502 || code === 503) return 'HTTP ' + code + ' — proxy down';
+    return 'HTTP ' + code;
+  }
+
+  function formatReaderError(e) {
+    if (!e) return 'unknown';
+    if (e.name === 'AbortError') return 'timeout';
+    var m = e.message || String(e);
+    if (/Failed to fetch|Load failed|NetworkError/i.test(m)) return 'network/CORS';
+    return m;
+  }
+
+  async function tryRead(reader, target) {
+    var opts = { method: 'GET', redirect: 'follow', cache: 'no-store' };
+    if (reader.headers) opts.headers = reader.headers;
+
+    var res = await fetchWithTimeout(reader.build(target), opts, 6500);
+    if (!res.ok) throw new Error(statusMessageFor(res.status));
+
+    var txt = await res.text();
+
+    /* Jina returns this when upstream gives a 301 */
+    if (/status code:\s*30[1278]/i.test(txt)) {
+      throw new Error('upstream 301/302 redirect (likely feed page)');
+    }
+
+    if (reader.json) {
+      try {
+        var parsed = JSON.parse(txt);
+        if (reader.json === 'contents')      txt = parsed.contents || '';
+        else if (reader.json === 'data')     txt = JSON.stringify(parsed.data || {});
+        else                                 txt = JSON.stringify(parsed);
+      } catch (e) { throw new Error('bad JSON payload'); }
+    }
+
+    return txt;
+  }
+
+  /* Robust loop: readers × variants × 2 attempts, 60 s global deadline */
+  async function readPage(target) {
+    var variants = variantsOf(target);
+    var errors = [];
+    var deadline = Date.now() + 60000;
+    var attemptNo = 0;
+
+    for (var i = 0; i < READERS.length; i++) {
+      var r = READERS[i];
+
+      for (var j = 0; j < variants.length; j++) {
+        if (Date.now() > deadline) {
+          log('Reader pipeline deadline hit (60s)', 'warn');
+          throw new Error(errors.slice(-3).join(' · '));
+        }
+
+        var v = variants[j];
+        var tag = r.name + (j === 0 ? '' : ' · ' + v.label);
+
+        for (var attempt = 1; attempt <= 2; attempt++) {
+          attemptNo++;
+          setStatus('Reader ' + (i + 1) + '/' + READERS.length + ' · ' + tag +
+                    '… (attempt ' + attemptNo + ')', 'busy');
+
+          try {
+            var txt = await tryRead(r, v.url);
+            if (!txt || txt.length < 100) throw new Error('empty');
+            if (looksLikeLoginWall(txt)) {
+              log('⚠ ' + tag + ' — login wall', 'warn');
+              errors.push(tag + ': login wall');
+              break;
+            }
+            log('✓ ' + tag + ' — ' + txt.length + ' chars', 'ok');
+            return { text: txt, reader: tag, variant: v.label };
+          } catch (e) {
+            var m = formatReaderError(e);
+            if (attempt === 2 || /HTTP 4|login wall|empty|redirect/i.test(m)) {
+              log('✗ ' + tag + ' — ' + m, 'warn');
+              errors.push(tag + ': ' + m);
+            }
+          }
+        }
+      }
+    }
+
+    throw new Error(errors.slice(-3).join(' · '));
+  }
+
+  /* ===================================================================
+     7) Poster / profile card
+     =================================================================== */
+  function renderPoster(poster, meta) {
+    if (!poster && !meta.title) { posterCard.classList.add('hidden'); return; }
+
+    var name = cleanProfileName(meta.title || '');
+    if (!name) name = 'Facebook Post';
+
+    posterName.innerHTML = '<i class="fa-solid fa-user"></i>';
+    posterName.appendChild(document.createTextNode(name));
+
+    if (meta.description) {
+      posterDesc.textContent = meta.description;
+      posterDesc.classList.remove('hidden');
+    } else {
+      posterDesc.classList.add('hidden');
+    }
+
+    if (poster) {
+      posterImg.src = poster;
+      posterImg.classList.remove('hidden');
+      posterImg.onerror = function () { posterImg.classList.add('hidden'); };
+    } else {
+      posterImg.classList.add('hidden');
+    }
+
+    posterCard.classList.remove('hidden');
+  }
+
+  function clearPoster() {
+    posterCard.classList.add('hidden');
+    posterImg.removeAttribute('src');
+  }
+
+  function filterPoster(items, poster) {
+    if (!poster) return items;
+    var hasVideo = items.some(function (u) { return kindOf(u) === 'video'; });
+    if (!hasVideo) return items;
+    return items.filter(function (u) {
+      try {
+        var a = new URL(u), b = new URL(poster);
+        return !(a.hostname === b.hostname && a.pathname === b.pathname);
+      } catch (e) { return true; }
+    });
+  }
+
+  /* ===================================================================
+     8) Results rendering
+     =================================================================== */
+  function renderResults(urls) {
+    resultsEl.innerHTML = '';
+    if (!urls.length) return;
+
+    urls.forEach(function (u) {
+      var kind = kindOf(u);
+      var card = document.createElement('div');
+      card.className = 'card media';
+
+      var thumb = document.createElement('div');
+      thumb.className = 'thumb';
+
+      if (kind === 'photo') {
+        var img = new Image();
+        img.loading = 'lazy';
+        img.decoding = 'async';
+        img.referrerPolicy = 'no-referrer';
+        img.alt = 'Facebook photo';
+        img.onerror = function () {
+          thumb.className = 'thumb broken';
+          thumb.textContent = 'Preview blocked by Facebook — use Download / Open.';
+        };
+        img.src = u;
+        thumb.appendChild(img);
+      } else if (kind === 'video') {
+        var v = document.createElement('video');
+        v.src = u;
+        v.controls = true;
+        v.playsInline = true;
+        v.preload = 'metadata';
+        v.referrerPolicy = 'no-referrer';
+        v.onerror = function () {
+          thumb.className = 'thumb broken';
+          thumb.textContent = 'Video preview unavailable — use Download or MP3.';
+        };
+        thumb.appendChild(v);
+      } else {
+        var a = document.createElement('audio');
+        a.src = u;
+        a.controls = true;
+        a.preload = 'none';
+        thumb.appendChild(a);
+      }
+
+      var meta = document.createElement('div');
+      meta.className = 'meta';
+      var tagEl = document.createElement('span');
+      tagEl.className = 'tag ' + kind;
+      tagEl.textContent = kind.toUpperCase();
+      var fname = document.createElement('span');
+      fname.className = 'fname';
+      fname.textContent = fileNameFor(u, kind);
+      meta.appendChild(tagEl);
+      meta.appendChild(fname);
+
+      var actions = document.createElement('div');
+      actions.className = 'actions';
+
+      var dl = mkBtn('fa-solid fa-download', 'Download', 'primary');
+      dl.addEventListener('click', function () {
+        downloadMedia(u, fileNameFor(u, kind), dl);
+      });
+      actions.appendChild(dl);
+
+      if (kind === 'video' || kind === 'audio') {
+        var mp3 = mkBtn('fa-solid fa-music', 'MP3', '');
+        mp3.addEventListener('click', function () {
+          convertToMp3(u, fileNameFor(u, kind), mp3);
+        });
+        actions.appendChild(mp3);
+      }
+
+      var copy = mkBtn('fa-solid fa-link', 'Copy', 'ghost');
+      copy.addEventListener('click', async function () {
+        try {
+          await navigator.clipboard.writeText(u);
+          flash(copy, 'fa-solid fa-check', 'Copied');
+        } catch (e) {
+          log(u);
+          setStatus('Clipboard blocked — link printed in console.', 'warn');
+        }
+      });
+      actions.appendChild(copy);
+
+      var open = mkBtn('fa-solid fa-arrow-up-right-from-square', 'Open', 'ghost');
+      open.addEventListener('click', function () { window.open(u, '_blank', 'noopener'); });
+      actions.appendChild(open);
+
+      card.appendChild(thumb);
+      card.appendChild(meta);
+      card.appendChild(actions);
+      resultsEl.appendChild(card);
+    });
+  }
+
+  /* ===================================================================
+     9) Direct download
+     =================================================================== */
+  async function downloadMedia(url, filename, btn) {
+    var oldLabel = btn ? getBtnLabel(btn) : '';
+    if (btn) { btn.disabled = true; setBtnLabel(btn, 'Downloading…'); }
+
+    try {
+      log('Downloading ' + filename);
+      var res = await fetchWithTimeout(url, { mode: 'cors' }, 60000);
+      if (!res.ok) throw new Error('HTTP ' + res.status);
+      var blob = await res.blob();
+      if (!blob.size) throw new Error('empty file');
+      saveBlob(blob, filename);
+      log('Saved ' + filename + ' (' + fmtSize(blob.size) + ')', 'ok');
+      setStatus('Saved: ' + filename, 'ok');
+    } catch (e) {
+      log('Direct download blocked (' + e.message + ') → opening in new tab.', 'warn');
+      window.open(url, '_blank', 'noopener');
+      setStatus('Opened in a new tab — long-press / right-click → “Save video as…”.', 'warn');
+    } finally {
+      if (btn) { btn.disabled = false; setBtnLabel(btn, oldLabel); }
+    }
+  }
+
+  /* ===================================================================
+     10) ffmpeg.wasm — MP4 → MP3
+     =================================================================== */
+  var FF = null;
+  var ffLoading = null;
+
+  var FF_JS_CDN   = 'https://unpkg.com/@ffmpeg/ffmpeg@0.11.6/dist/ffmpeg.min.js';
+  var FF_CORE_CDN = 'https://unpkg.com/@ffmpeg/core@0.11.0/dist/ffmpeg-core.js';
+
+  function loadScriptOnce(src) {
+    return new Promise(function (resolve, reject) {
+      if (document.querySelector('script[data-hex-src="' + src + '"]')) return resolve();
+      var s = document.createElement('script');
+      s.src = src;
+      s.async = true;
+      s.dataset.hexSrc = src;
+      s.onload = function () { resolve(); };
+      s.onerror = function () { reject(new Error('Could not load ' + src)); };
+      document.head.appendChild(s);
+    });
+  }
+
+  async function getFFmpeg() {
+    if (FF) return FF;
+    if (ffLoading) return ffLoading;
+
+    ffLoading = (async function () {
+      log('Loading ffmpeg.wasm (first run ≈ 25 MB)…');
+      await loadScriptOnce(FF_JS_CDN);
+      if (!window.FFmpeg || !window.FFmpeg.createFFmpeg) {
+        throw new Error('ffmpeg.wasm global not found');
+      }
+      var ff = window.FFmpeg.createFFmpeg({ log: false, corePath: FF_CORE_CDN });
+      if (ff.setLogger) {
+        ff.setLogger(function (m) {
+          if (m && m.type === 'err' && m.message) log('ffmpeg › ' + m.message, 'warn');
+        });
+      }
+      await ff.load();
+      log('ffmpeg.wasm ready ✓', 'ok');
+      FF = ff;
+      return ff;
+    })();
+
+    try { return await ffLoading; }
+    catch (e) { ffLoading = null; throw e; }
+  }
+
+  async function convertToMp3(url, filename, btn) {
+    var oldLabel = btn ? getBtnLabel(btn) : '';
+    if (btn) { btn.disabled = true; setBtnLabel(btn, '0%'); }
+
+    try {
+      setStatus('Loading MP3 encoder…', 'busy');
+      var ff = await getFFmpeg();
+
+      if (ff.setProgress) {
+        ff.setProgress(function (p) {
+          var r = p && p.ratio;
+          if (btn && typeof r === 'number' && !isNaN(r)) {
+            setBtnLabel(btn, Math.max(1, Math.min(99, Math.round(r * 100))) + '%');
+          }
+        });
+      }
+
+      var buf = null;
+      var ext = '.mp4';
+
+      try {
+        setStatus('Fetching video for MP3 encoding…', 'busy');
+        log('Fetching video source…');
+        var res = await fetchWithTimeout(url, { mode: 'cors' }, 45000);
+        if (!res.ok) throw new Error('HTTP ' + res.status);
+        buf = new Uint8Array(await res.arrayBuffer());
+        if (!buf.length) throw new Error('empty video');
+        var em = url.match(/\.(mp4|m4v|webm|mov|ogv)(?=\?|#|&|$)/i);
+        if (em) ext = '.' + em[1].toLowerCase();
+        log('Video fetched: ' + fmtSize(buf.length));
+      } catch (e) {
+        log('Could not fetch video (' + e.message + ') — pick the saved file instead.', 'warn');
+        setStatus('Choose the downloaded video file to convert to MP3…', 'warn');
+        var f = await pickFile('video/*');
+        if (!f) throw new Error('no file selected');
+        buf = new Uint8Array(await f.arrayBuffer());
+        var fm = f.name.match(/\.([a-z0-9]{2,5})$/i);
+        if (fm) ext = '.' + fm[1].toLowerCase();
+        log('Local file loaded: ' + f.name + ' (' + fmtSize(buf.length) + ')');
+      }
+
+      var inName  = 'hex_in_'  + Date.now() + ext;
+      var outName = 'hex_out_' + Date.now() + '.mp3';
+
+      ff.FS('writeFile', inName, buf);
+
+      setStatus('Encoding MP3 with ffmpeg.wasm…', 'busy');
+      log('Encoding → MP3 (libmp3lame, q2)…');
+
+      await ff.run('-i', inName, '-vn', '-acodec', 'libmp3lame', '-q:a', '2', outName);
+
+      var data = ff.FS('readFile', outName);
+      var blob = new Blob([data.buffer], { type: 'audio/mpeg' });
+      var mp3Name = filename.replace(/\.[a-z0-9]+$/i, '') + '.mp3';
+      saveBlob(blob, mp3Name);
+
+      log('MP3 ready: ' + mp3Name + ' (' + fmtSize(blob.size) + ')', 'ok');
+      setStatus('MP3 saved ✓', 'ok');
+
+      try { ff.FS('unlink', inName); } catch (e) {}
+      try { ff.FS('unlink', outName); } catch (e) {}
+
+    } catch (e) {
+      log('MP3 conversion failed: ' + e.message, 'err');
+      setStatus('MP3 failed: ' + e.message, 'err');
+    } finally {
+      if (btn) { btn.disabled = false; setBtnLabel(btn, oldLabel); }
+    }
+  }
+
+  /* ===================================================================
+     11) Main flow
+     =================================================================== */
+  var fetching = false;
+
+  async function handleFetch(silent) {
+    if (fetching) return;
+    var raw = urlInput.value.trim();
+    if (!raw) {
+      if (!silent) setStatus('Paste a Facebook link first.', 'warn');
+      urlInput.focus();
+      return;
+    }
+
+    var target = normalizeUrl(raw);
+
+    /* Direct media URL */
+    if (!target && /^https?:\/\//i.test(raw) && looksLikeDirectMedia(raw)) {
+      clearPoster();
+      renderResults([raw]);
+      setStatus('Direct media URL — ready to download.', 'ok');
+      return;
+    }
+
+    if (!target) {
+      if (!silent) setStatus('That does not look like a Facebook link.', 'err');
+      return;
+    }
+
+    fetching = true;
+    urlInput.value = target;
+    fetchBtn.disabled = true;
+    resultsEl.innerHTML = '';
+    clearPoster();
+
+    var feedType = isFeedUrl(target);
+    if (feedType) {
+      log('⚠ Feed URL: ' + feedType, 'warn');
+      setStatus(feedType + ' detected — trying anyway (may not contain a specific video)…', 'busy');
+    } else {
+      setStatus('Starting…', 'busy');
+    }
+    log('━━ Target: ' + target);
+
+    try {
+      var result = await readPage(target);
+      var meta   = extractMeta(result.text);
+      var poster = extractPoster(result.text);
+      var items  = extractMedia(result.text);
+
+      log('Extracted ' + items.length + ' media URL(s) via ' + result.reader + ' [' + result.variant + ']');
+
+      renderPoster(poster, meta);
+      var filtered = filterPoster(items, poster);
+
+      if (filtered.length) {
+        renderResults(filtered);
+        setStatus('Found ' + filtered.length + ' item(s) via ' + result.reader +
+                  ' [' + result.variant + ']. Tap Download or MP3.', 'ok');
+      } else if (feedType || looksLikeFeedContent(result.text)) {
+        setStatus(
+          (feedType || 'This page') + ' — it lists many videos, not a single downloadable post.\n' +
+          'Open the feed in a browser, tap a specific video, then paste that video URL here.',
+          'warn',
+          [
+            { label: 'Open feed', icon: 'fa-solid fa-arrow-up-right-from-square',
+              fn: function () { window.open(target, '_blank', 'noopener'); } },
+            { label: 'Paste specific URL', icon: 'fa-solid fa-link',
+              fn: function () {
+                urlInput.value = '';
+                urlInput.placeholder = 'Paste a specific video / reel / post URL…';
+                urlInput.focus();
+                setStatus('Paste the URL of a single video or reel.', 'warn');
+              } }
+          ]
+        );
+      } else {
+        setStatus(
+          'Page read via ' + result.reader + ', but no direct media URLs found.',
+          'warn',
+          [
+            { label: 'Open post', icon: 'fa-solid fa-arrow-up-right-from-square',
+              fn: function () { window.open(target, '_blank', 'noopener'); } },
+            { label: 'Paste direct URL', icon: 'fa-solid fa-link',
+              fn: function () {
+                urlInput.value = '';
+                urlInput.placeholder = 'Paste a direct .mp4 / .jpg / .mp3 URL…';
+                urlInput.focus();
+              } }
+          ]
+        );
+      }
+    } catch (e) {
+      log('All readers failed: ' + e.message, 'err');
+
+      /* Specialised feed error — the user pasted a listing URL, not a post */
+      if (feedType) {
+        setStatus(
+          feedType + ' — this URL lists many videos, so there is no single downloadable file.\n' +
+          'Open the feed in a browser, tap a specific video, then paste that video\'s URL here.',
+          'warn',
+          [
+            { label: 'Open feed', icon: 'fa-solid fa-arrow-up-right-from-square',
+              fn: function () { window.open(target, '_blank', 'noopener'); } },
+            { label: 'Paste specific URL', icon: 'fa-solid fa-link',
+              fn: function () {
+                urlInput.value = '';
+                urlInput.placeholder = 'Paste a specific video / reel / post URL…';
+                urlInput.focus();
+                setStatus('Paste the URL of a single video or reel.', 'warn');
+              } },
+            { label: 'Retry', icon: 'fa-solid fa-rotate-right',
+              fn: function () { handleFetch(); } }
+          ]
+        );
+      } else {
+        setStatus(
+          'Auto-fetch failed — every reader was blocked (common for private / geo-locked posts).\n' +
+          'Try: Retry · Open in browser · paste the direct media URL.',
+          'err',
+          [
+            { label: 'Retry', icon: 'fa-solid fa-rotate-right',
+              fn: function () { handleFetch(); } },
+            { label: 'Open post', icon: 'fa-solid fa-arrow-up-right-from-square',
+              fn: function () { window.open(target, '_blank', 'noopener'); } },
+            { label: 'Direct URL', icon: 'fa-solid fa-link',
+              fn: function () {
+                urlInput.value = '';
+                urlInput.placeholder = 'Paste a direct .mp4 / .jpg / .mp3 URL…';
+                urlInput.focus();
+              } }
+          ]
+        );
+      }
+    } finally {
+      fetching = false;
+      fetchBtn.disabled = false;
+    }
+  }
+
+  /* ===================================================================
+     12) Theme drawer wiring
+     =================================================================== */
+  function openThemeDrawer() {
+    themeDrawer.classList.add('open');
+    themeBackdrop.classList.add('open');
+  }
+  function closeThemeDrawer() {
+    themeDrawer.classList.remove('open');
+    themeBackdrop.classList.remove('open');
+  }
+  if (themeBtn) themeBtn.addEventListener('click', openThemeDrawer);
+  if (themeClose) themeClose.addEventListener('click', closeThemeDrawer);
+  if (themeBackdrop) themeBackdrop.addEventListener('click', closeThemeDrawer);
+  document.addEventListener('keydown', function (e) {
+    if (e.key === 'Escape') closeThemeDrawer();
+  });
+
+  /* ===================================================================
+     13) App events
+     =================================================================== */
+  fetchBtn.addEventListener('click', function () { handleFetch(); });
+
+  urlInput.addEventListener('keydown', function (e) {
+    if (e.key === 'Enter') { e.preventDefault(); handleFetch(); }
+  });
+
+  /* Auto-detect on paste */
+  var autoFetchTimer = null;
+  urlInput.addEventListener('paste', function () {
+    clearTimeout(autoFetchTimer);
+    autoFetchTimer = setTimeout(function () {
+      var normalized = normalizeUrl(urlInput.value);
+      if (normalized) {
+        urlInput.value = normalized;
+        log('Auto-detected Facebook link from paste', 'ok');
+        handleFetch(true);
+      } else if (/^https?:\/\//i.test(urlInput.value.trim()) && looksLikeDirectMedia(urlInput.value)) {
+        handleFetch(true);
+      }
+    }, 400);
+  });
+
+  /* Auto-detect on typing */
+  urlInput.addEventListener('input', function () {
+    clearTimeout(autoFetchTimer);
+    var v = urlInput.value.trim();
+    if (!v || v.length < 20) return;
+    autoFetchTimer = setTimeout(function () {
+      var normalized = normalizeUrl(urlInput.value);
+      if (normalized && normalized !== 'https://www.facebook.com/') {
+        urlInput.value = normalized;
+        handleFetch(true);
+      }
+    }, 900);
+  });
+
+  clearBtn.addEventListener('click', function () {
+    urlInput.value = '';
+    resultsEl.innerHTML = '';
+    clearPoster();
+    setStatus('');
+    urlInput.focus();
+  });
+
+  pasteBtn.addEventListener('click', async function () {
+    try {
+      var txt = await navigator.clipboard.readText();
+      if (txt) {
+        urlInput.value = txt.trim();
+        log('Pasted from clipboard');
+        var normalized = normalizeUrl(urlInput.value);
+        if (normalized) { urlInput.value = normalized; handleFetch(true); }
+        else if (looksLikeDirectMedia(urlInput.value)) handleFetch(true);
+      } else {
+        setStatus('Clipboard is empty.', 'warn');
+      }
+    } catch (e) {
+      log('Clipboard read blocked — paste manually.', 'warn');
+      urlInput.focus();
+    }
+  });
+
+  clearLog.addEventListener('click', function () {
+    logEl.innerHTML = '';
+    log('Console cleared');
+  });
+
+  /* ===================================================================
+     14) Boot
+     =================================================================== */
+  forceDark();
+  buildThemeGallery();
+  wireCustomPanel();
+  loadSavedTheme();
+  loadSettings();
+
+  log('Hex Facebook v6 ready · forced dark mode ON');
+  log('Themes: ' + THEMES.length + ' · tap the palette button in the header');
+  log('Readers: ' + READERS.length + ' · each tried across www / mbasic / noscript / plugin-video / plugin-post');
+  log('MP3: ffmpeg.wasm 0.11.6 + core 0.11.0');
+
+  if (location.protocol === 'file:') {
+    log('⚠ Running from file:// — many CORS proxies reject Origin: null.', 'warn');
+    log('   → Host on GitHub Pages / Netlify / Vercel for best results.', 'warn');
+  }
+})();
+</script>
+<script>
+// Disable right-click
+document.addEventListener('contextmenu', (e) => e.preventDefault());
+
+function ctrlShiftKey(e, keyCode) {
+  return e.ctrlKey && e.shiftKey && e.keyCode === keyCode.charCodeAt(0);
+}
+
+document.onkeydown = (e) => {
+  // Disable F12, Ctrl + Shift + I, Ctrl + Shift + J, Ctrl + U
+  if (
+    event.keyCode === 123 ||
+    ctrlShiftKey(e, 'I') ||
+    ctrlShiftKey(e, 'J') ||
+    ctrlShiftKey(e, 'C') ||
+    (e.ctrlKey && e.keyCode === 'U'.charCodeAt(0))
+  )
+    return false;
+};
+</script>
+<script>
+ if (typeof document.onselectstart!="undefined" ) {
+  document.onselectstart=new Function ("return false" );
+ }
+ else {
+  document.onmousedown=new Function ("return false" );
+  document.onmouseup=new Function ("return true" );
+ }
+</script>
+<script>
+   document.onkeydown = function(e) {
+if(event.keyCode == 123) {
+    return false;
+}
+if(e.ctrlKey && e.shiftKey && e.keyCode == 'I'.charCodeAt(0)){
+    return false;
+}
+if(e.ctrlKey && e.shiftKey && e.keyCode == 'J'.charCodeAt(0)){
+    return false;
+}
+if(e.ctrlKey && e.keyCode == 'U'.charCodeAt(0)){
+    return false;
+}
+if(e.ctrlKey && e.keyCode == 'C'.charCodeAt(0)){
+    return false;
+}
+if(e.ctrlKey && e.keyCode == 'X'.charCodeAt(0)){
+    return false;
+}
+if(e.ctrlKey && e.keyCode == 'Y'.charCodeAt(0)){
+    return false;
+}
+if(e.ctrlKey && e.keyCode == 'Z'.charCodeAt(0)){
+    return false;
+}
+if(e.ctrlKey && e.keyCode == 'V'.charCodeAt(0)){
+    return false;
+}
+if (e.keyCode == 67 && e.shiftKey && (e.ctrlKey || e.metaKey)){
+    return false;
+}
+if (e.keyCode == 'J'.charCodeAt(0) && e.altKey && (e.ctrlKey || e.metaKey)){
+    return false;
+}
+if (e.keyCode == 'I'.charCodeAt(0) && e.altKey && (e.ctrlKey || e.metaKey)){
+    return false;
+}
+if ((e.keyCode == 'V'.charCodeAt(0) && e.metaKey) || (e.metaKey && e.altKey)){
+    return false;
+}
+if (e.ctrlKey && e.shiftKey && e.keyCode == 'C'.charCodeAt(0)){
+    return false;
+}
+if(e.ctrlKey && e.keyCode == 'S'.charCodeAt(0)){
+    return false;
+}
+if(e.ctrlKey && e.keyCode == 'H'.charCodeAt(0)){
+    return false;
+}
+if(e.ctrlKey && e.keyCode == 'A'.charCodeAt(0)){
+    return false;
+}
+if(e.ctrlKey && e.keyCode == 'F'.charCodeAt(0)){
+    return false;
+}
+if(e.ctrlKey && e.keyCode == 'E'.charCodeAt(0)){
+    return false;
+}
+}
+if (document.addEventListener) {
+    document.addEventListener('contextmenu', function(e) {
+    e.preventDefault();
+    }, false);
+}else{
+    document.attachEvent('oncontextmenu', function() {
+    window.event.returnValue = false;
+    });
+}
+</script>
+
+
+</body>
+</html>
